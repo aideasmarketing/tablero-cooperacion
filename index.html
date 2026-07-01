@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cooperación — Tablero de Redes</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" crossorigin="anonymous"></script>
+<style>
+:root{--bg:#eef4ef;--card:#fff;--header:#15573f;--accent:#3aa66b;--accent2:#2f8fd6;--accent3:#e0a93b;
+--ink:#173d2c;--muted:#6c8579;--pos:#3aa66b;--neg:#d2553f;--line:#e1ebe4;--radius:14px;--gap:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',-apple-system,sans-serif;background:var(--bg);color:var(--ink);padding:16px;line-height:1.5;font-size:15px}
+.wrap{max-width:1200px;margin:0 auto}
+header.top{background:linear-gradient(135deg,#15573f,#1d7350);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:var(--gap)}
+.toprow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px}
+header.top h1{font-size:21px;font-weight:700}
+header.top .sub{font-size:13px;opacity:.85;margin-top:2px}
+.controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;align-items:flex-end}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;opacity:.75;font-weight:600}
+.ctl select,.ctl input{padding:7px 10px;border:1px solid rgba(255,255,255,.28);border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font-size:13px}
+.ctl select option{background:#15573f;color:#fff}
+/* KPIs */
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:18px 2px 12px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:var(--gap)}
+.kpi{background:var(--card);border-radius:var(--radius);padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid var(--accent)}
+.kpi.b{border-top-color:var(--accent2)}.kpi.c{border-top-color:var(--accent3)}.kpi.muted{border-top-color:#cbd5d0}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi .value{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.kpi .chg{font-size:12px;font-weight:600;margin-top:3px}
+.chg.pos{color:var(--pos)}.chg.neg{color:var(--neg)}.chg.flat{color:var(--muted)}
+/* CHARTS */
+.chart-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:var(--gap)}
+.card{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h3{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3 select{font-size:13px;padding:3px 7px;border:1px solid var(--line);border-radius:6px;color:var(--ink)}
+canvas{max-height:260px}
+/* TOP 3 CON IMÁGENES */
+.top3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap)}
+.podium{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:5px solid var(--accent);overflow:hidden;display:flex;flex-direction:column}
+.podium.p1{border-left-color:#e0a93b}.podium.p2{border-left-color:#9aa7a0}.podium.p3{border-left-color:#b9824a}
+.podium-img{width:100%;height:150px;object-fit:cover;display:block}
+.podium-ph{width:100%;height:150px;background:linear-gradient(135deg,#e8f5e9,#d6e4f7);display:flex;align-items:center;justify-content:center;font-size:40px}
+.podium-body{padding:12px 14px;flex:1}
+.podium .medal{font-size:20px}
+.podium .ttag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:9px;color:#fff;background:var(--accent2);margin-left:5px}
+.podium .ctext{font-size:13px;font-weight:600;margin:7px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+.podium a{color:inherit;text-decoration:none}.podium a:hover{text-decoration:underline}
+.podium .pstats{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.podium .pstats b{color:var(--ink);font-size:15px;display:block}
+/* CONCLUSION */
+.conclusion{background:#f0f7f2;border:1px solid #d4e6dc;border-radius:var(--radius);padding:13px 17px;margin-top:var(--gap);font-size:14px;line-height:1.6}
+.conclusion b{color:var(--accent)}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:right;padding:8px 9px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+thead th:first-child,thead th:nth-child(2){text-align:left}
+tbody td{padding:8px 9px;border-bottom:1px solid #f1f4f3;text-align:right}
+tbody td:first-child,tbody td:nth-child(2){text-align:left}
+tbody tr:hover{background:#f4faf6}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;color:#fff;white-space:nowrap}
+.tag.Carrusel,.tag.Álbum{background:var(--accent3)}.tag.Imagen,.tag.Foto{background:var(--accent2)}.tag.Reel,.tag.Video{background:#9b59b6}
+.cap{max-width:280px;color:var(--accent2);text-decoration:none;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.cap:hover{text-decoration:underline}
+/* ADS */
+.adtbl td{text-align:right}.adtbl td:first-child{text-align:left}
+.adtbl tr.excluded{opacity:.4}
+.totrow td{font-weight:800;border-top:2px solid var(--line);background:#f4faf6}
+/* PILLS / FILTERS */
+.fpills{display:flex;gap:6px;flex-wrap:wrap}
+.fpill{border:1px solid var(--line);background:#fff;color:var(--ink);padding:5px 13px;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}
+.fpill:hover{border-color:var(--accent)}.fpill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.pill{display:inline-block;font-size:12px;background:#fbeccd;color:#9a6a16;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:7px}
+.sorteo-pill{background:#fdefd0;color:#b08900}
+/* MONTH SELECTOR PILLS */
+.month-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.msel{border:1px solid var(--line);background:#fff;padding:0 8px;border-radius:7px;font-size:13px;color:var(--ink);height:32px}
+/* NET STATUS */
+.net-tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:rgba(255,255,255,.16);padding:5px 11px;border-radius:18px}
+.dot{width:8px;height:8px;border-radius:50%;background:#86efac}
+/* AUD */
+.aud-note{font-size:12px;color:var(--muted);margin-top:6px}
+.hidden{display:none!important}
+footer{font-size:12px;color:var(--muted);text-align:center;padding:14px;margin-top:8px}
+@media(max-width:680px){
+body{padding:10px}header.top{padding:14px}.controls{gap:8px;margin-top:12px}
+.ctl{flex:1 1 130px}.kpi-row{grid-template-columns:repeat(2,1fr);gap:10px}
+.chart-row{grid-template-columns:1fr}.top3{grid-template-columns:1fr}
+.cap{max-width:120px}canvas{max-height:230px}.card{padding:12px}
+}
+@media print{body{background:#fff}.controls,.fpill,.btn{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="toprow">
+    <div class="brand">
+      <div class="logo">🌱</div>
+      <div><h1>Cooperación Alimento Balanceado</h1>
+      <div class="sub" id="rangeLabel">Nutrición en armonía con el planeta · tablero de redes</div></div>
+    </div>
+    <span class="net-tag"><span class="dot"></span><span id="netStatus">IG + FB · Metricool + Meta Ads</span></span>
+  </div>
+  <div class="controls">
+    <div class="ctl"><label>Vista</label>
+      <select id="network">
+        <option value="historico">📅 Histórico (IG + FB)</option>
+        <option value="ig_only">📷 Instagram</option>
+        <option value="metaads">📊 Meta Ads (pauta)</option>
+      </select></div>
+    <div class="ctl" id="ctlMode"><label>Periodo</label>
+      <select id="monthMode">
+        <option value="single">Un mes</option>
+        <option value="range">Rango de meses</option>
+        <option value="ytd">Todo 2026</option>
+        <option value="full" selected>Todo el histórico</option>
+      </select></div>
+    <div class="ctl" id="ctlFrom"><label>📅 Mes</label>
+      <select id="mesFrom"></select></div>
+    <div class="ctl hidden" id="ctlTo"><label>📅 Hasta</label>
+      <select id="mesTo"></select></div>
+    <div class="ctl" id="ctlComp"><label>Comparar con</label>
+      <select id="compare">
+        <option value="prev" selected>Periodo anterior equiv.</option>
+        <option value="custom">Meses específicos</option>
+        <option value="none">Sin comparación</option>
+      </select></div>
+    <div class="ctl hidden" id="ctlCompFrom"><label>📅 Comp. desde</label>
+      <select id="mesCompFrom"></select></div>
+    <div class="ctl hidden" id="ctlCompTo"><label>📅 Comp. hasta</label>
+      <select id="mesCompTo"></select></div>
+  </div>
+</header>
+
+<!-- ═══════════ HISTÓRICO ═══════════ -->
+<div id="histView">
+  <div class="section-title" id="kpiTitle">Resumen del periodo</div>
+  <section class="kpi-row" id="kpis"></section>
+
+  <div class="section-title" id="folTitle">📈 Seguidores nuevos IG por mes</div>
+  <div class="chart-row" id="folRow">
+    <div class="card"><h3>Seguidores nuevos <span id="folPeak" style="font-weight:400;font-size:11px;color:var(--muted)"></span></h3><canvas id="cfol"></canvas></div>
+  </div>
+
+  <div class="section-title">🏆 Top publicaciones del periodo · interacciones orgánicas + pauta</div>
+  <section class="top3" id="top3"></section>
+  <div id="top3compLabel" style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 8px;display:none"></div>
+  <section class="top3" id="top3comp"></section>
+  <div id="top3compLabel" style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 8px;display:none"></div>
+  <section class="top3" id="top3comp"></section>
+  <div class="conclusion" id="conclusion"></div>
+
+  <div class="section-title" id="audTitle">👥 Audiencia — foto actual de seguidores</div>
+  <div class="chart-row" id="audRow" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+    <div class="card"><h3>Género</h3><canvas id="cGen"></canvas></div>
+    <div class="card"><h3>Edad</h3><canvas id="cAge"></canvas></div>
+    <div class="card"><h3>Top ciudades <span id="audGeo" style="font-weight:400;font-size:11px;color:var(--muted)"></span></h3><canvas id="cCity"></canvas></div>
+  </div>
+
+  <div class="card" id="histCommentCard" style="margin-top:14px;display:none">
+    <h3 id="histCommentTitle" style="margin-bottom:8px">Lectura del mes</h3>
+    <div id="histCommentText" style="font-size:14px;line-height:1.6;color:var(--ink)"></div>
+  </div>
+
+  <div class="section-title">Tendencias</div>
+  <section class="chart-row">
+    <div class="card"><h3 id="chart1Title">Métricas del periodo</h3><canvas id="c1"></canvas></div>
+    <div class="card"><h3>Inversión vs interacciones por mes</h3><canvas id="c2"></canvas></div>
+  </section>
+
+  <div class="section-title">📋 Tabla mensual</div>
+  <div class="card" style="overflow-x:auto">
+    <table id="histTbl">
+      <thead><tr>
+        <th style="text-align:left">Mes</th>
+        <th>Seg. nuevos</th><th>Total seg.</th>
+        <th>Int. totales</th><th>Int. orgánicas</th>
+        <th>Alcance</th><th>Inversión</th><th>CPR</th><th>Nota</th>
+      </tr></thead>
+      <tbody id="histTblBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════ META ADS ═══════════ -->
+<div id="adsView" class="hidden">
+  <div id="adFilters" class="fpills" style="margin-bottom:10px">
+    <button class="fpill active" data-f="all">📊 Todas</button>
+    <button class="fpill" data-f="PDV">🏪 Puntos de Venta</button>
+    <button class="fpill" data-f="Marca">⭐ Marca / Consumidor</button>
+  </div>
+  <div class="section-title" style="margin-top:4px">Mes: <span id="adMonthAccesos" style="font-weight:400"></span></div>
+  <div id="adMonthPillsBox" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px"></div>
+  <div id="adMonthLabel" style="font-size:11px;color:var(--muted);margin-bottom:12px"></div>
+
+  <!-- Comparar con -->
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <div class="ctl"><label style="color:var(--ink);font-size:10px;font-weight:600;text-transform:uppercase">Comparar con</label>
+      <select id="adCompare" style="color:var(--ink);background:var(--card)">
+        <option value="none" selected>Sin comparación</option>
+        <option value="prev">Periodo anterior equiv.</option>
+        <option value="custom">Meses específicos</option>
+      </select></div>
+    <div class="ctl hidden" id="adCtlCompFrom"><label style="color:var(--ink);font-size:10px;font-weight:600;text-transform:uppercase">📅 Comp. desde</label>
+      <select id="adMesCompFrom" style="color:var(--ink);background:var(--card)"></select></div>
+    <div class="ctl hidden" id="adCtlCompTo"><label style="color:var(--ink);font-size:10px;font-weight:600;text-transform:uppercase">📅 Comp. hasta</label>
+      <select id="adMesCompTo" style="color:var(--ink);background:var(--card)"></select></div>
+  </div>
+
+  <div class="section-title" style="margin-top:4px">📊 Meta Ads · <span id="adCount" style="font-weight:400;font-size:12px;color:var(--muted)"></span></div>
+  <section class="kpi-row" id="adsKpis"></section>
+
+  <div class="card" id="adsCommentCard" style="margin-top:14px;display:none">
+    <h3 id="adsCommentTitle" style="margin-bottom:8px">Lectura del mes</h3>
+    <div id="adsCommentText" style="font-size:14px;line-height:1.6;color:var(--ink)"></div>
+  </div>
+  <div class="chart-row" style="margin-top:16px">
+    <div class="card"><h3>Inversión por objetivo</h3><canvas id="cAdsObj"></canvas></div>
+    <div class="card"><h3>Top campañas por inversión</h3><canvas id="cAdsTop"></canvas></div>
+  </div>
+  <div class="section-title">Campañas <span class="pill">desmarcá ✓ para excluir</span></div>
+  <div class="card">
+    <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div id="adFilters" class="fpills">
+        <button class="fpill active" data-f="all">Todas</button>
+        <button class="fpill" data-f="PDV">🏪 PdV</button>
+        <button class="fpill" data-f="Resto">⭐ Marca / Consumidor</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+      <table class="adtbl" id="adTbl">
+        <thead><tr><th>Campaña</th><th>Objetivo</th><th>Estado</th><th>Inversión</th><th>Impres.</th><th>Alcance</th><th>Clics</th><th>Resultados</th><th>✓</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="totrow"><td>TOTAL (incluidas)</td><td colspan="2"></td><td id="tSpend">0</td><td id="tImpr">0</td><td id="tReach">0</td><td id="tClicks">0</td><td id="tRes">—</td><td></td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="section-title">KPIs combinados (incluidas)</div>
+  <section class="kpi-row" id="combined"></section>
+  <div class="conclusion" id="adsNote" style="margin-top:12px"></div>
+</div>
+
+<!-- ═══════════ SMARTLINKS ═══════════ -->
+<div id="slView" class="hidden">
+  <div class="section-title">🏪 SmartLinks — Puntos de Venta · Metricool</div>
+  <section class="kpi-row" id="slKpis"></section>
+  <div class="chart-row" style="margin-top:16px">
+    <div class="card"><h3>Visitas por PdV</h3><canvas id="cSlVis"></canvas></div>
+    <div class="card"><h3>Clics: Ubicación vs WhatsApp</h3><canvas id="cSlBtn"></canvas></div>
+  </div>
+  <div class="section-title">Detalle por punto de venta</div>
+  <div class="card" style="overflow-x:auto">
+    <table id="slTbl">
+      <thead><tr><th>Punto de Venta</th><th>Visitas</th><th>Clics</th><th>CTR %</th><th>Ubicación</th><th>WhatsApp</th></tr></thead>
+      <tbody></tbody>
+      <tfoot><tr class="totrow"><td>TOTAL</td><td id="slV">0</td><td id="slC">0</td><td id="slCtr">0</td><td id="slL">0</td><td id="slW">0</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="conclusion" id="slNote" style="margin-top:12px"></div>
+</div>
+
+<footer>Fuente: Metricool (IG + FB orgánico) · Meta Ads API · SmartLinks · Datos extraídos de los archivos Excel de Cooperación · Actualizado mensualmente · Histórico al Jun 2026</footer>
+</div>
+
+<script>
+
+const HIST_MONTHS=[{"m": "Ene 2025", "ym": "2025-01", "seg": 114, "tot": 296, "int": 4054, "intOrg": 203, "intPaid": 3851, "reach": 121863, "views": 388952, "inv": 90882, "cpr": 34.7, "cpc": 45.37, "nota": "", "top3": [{"rank": "#1", "fecha": "13 Ene", "tipo": "Imagen", "desc": "Patas mojadas — verano en familia", "int": 23, "likes": 17, "comments": 3, "shares": 2, "saved": 1, "link": "https://www.instagram.com/p/DExHvevuZWS/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/625121971_18080627177265166_3135869670207266913_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=110&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=WRLW37_xqDoQ7kNvwGCZ8Fa&oh=00_Af3GA9DGFLdcexWmm61zamB-GAWqBrIGKl0Oscips_7gfQ&oe=69DFA650", "int_total": 3070, "int_pauta": 3047, "int_suma": 3070}, {"rank": "#2", "fecha": "28 Ene", "tipo": "Imagen", "desc": "", "int": 15, "likes": 15, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DFXsXDDqerf/", "img": "", "int_total": 217, "int_pauta": 202, "int_suma": 217}, {"rank": "#3", "fecha": "15 Ene", "tipo": "Carrusel", "desc": "Tips pulgas y garrapatas", "int": 36, "likes": 26, "comments": 9, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DE2wgPkMT34/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/657841840_18126646258584776_7255385691372678969_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ccb=7-5&oh=00_Af00JkwTl2O25294oN1OBCH99KWA-lXYWXLBdk77HrZ8Eg&oe=69E8E4AC", "int_total": 36, "int_pauta": 0, "int_suma": 36}], "comment": "Primer mes del año. <b>Patas mojadas</b> fue el contenido más viral (3.070 interacciones). Cuenta arranca con 183 seguidores."}, {"m": "Feb 2025", "ym": "2025-02", "seg": 75, "tot": 371, "int": 2012, "intOrg": 201, "intPaid": 1811, "reach": 96744, "views": 282663, "inv": 96874, "cpr": 37.82, "cpc": 54.61, "nota": "", "top3": [{"rank": "#1", "fecha": "5 Feb", "tipo": "Imagen", "desc": "Ficha gato pescado", "int": 13, "likes": 13, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DFsjyPlsYTg/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/622370892_17958242874024501_1355386667024916996_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af6wrHsxfiAX-3XLotKK2QHHSxJe0xo6pYPxOIRZMxOgQA&oe=6A048C78", "int_total": 904, "int_pauta": 891, "int_suma": 904}, {"rank": "#2", "fecha": "20 Feb", "tipo": "Imagen", "desc": "Día Mundial del Gato", "int": 23, "likes": 20, "comments": 3, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DGS9lJUuLCn/", "img": "https://scontent-lhr8-1.cdninstagram.com/v/t51.82787-15/480596897_17860396353359651_8752704196772759001_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af69MKlDW4GQJmhs2RvygR5jaq2VofR9WVYVIcmOZsmoLg&oe=6A201834", "int_total": 248, "int_pauta": 225, "int_suma": 248}, {"rank": "#3", "fecha": "17 Feb", "tipo": "Carrusel", "desc": "Tips bienestar urinario gatos", "int": 52, "likes": 34, "comments": 12, "shares": 3, "saved": 3, "link": "https://www.instagram.com/p/DGL7qDjIyK1/", "img": "https://scontent-lhr8-1.cdninstagram.com/v/t51.82787-15/480441721_17860032879359651_3723945913801635545_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af53MIn3bRVOblSzzdHpmBTrFW6zw4ek0DPWEKGB3jQFnA&oe=6A201834", "int_total": 52, "int_pauta": 0, "int_suma": 52}], "comment": "Mes estable. Día del Gato generó buen engagement orgánico. Reel Zoomie: CPR récord en pauta."}, {"m": "Mar 2025", "ym": "2025-03", "seg": 40, "tot": 411, "int": 5367, "intOrg": 269, "intPaid": 5098, "reach": 69798, "views": 247347, "inv": 96874, "cpr": 114.41, "cpc": 93.34, "nota": "", "top3": [{"rank": "#1", "fecha": "5 Mar", "tipo": "Imagen", "desc": "Vuelta al cole con mascota", "int": 14, "likes": 13, "comments": 1, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DG0m5fjIUAm/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/482274427_17862225726359651_1538855704335074051_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-g8TRokJ1hFMrOKMhUophgL2FsLAO1aCwLkiLyzmAkPg&oe=6A297C11", "int_total": 2197, "int_pauta": 2183, "int_suma": 2197}, {"rank": "#2", "fecha": "25 Mar", "tipo": "Imagen", "desc": "", "int": 19, "likes": 16, "comments": 2, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DHotti8ogB_/", "img": "", "int_total": 66, "int_pauta": 47, "int_suma": 66}, {"rank": "#3", "fecha": "18 Mar", "tipo": "Carrusel", "desc": "", "int": 20, "likes": 14, "comments": 4, "shares": 2, "saved": 0, "link": "https://www.instagram.com/p/DHVpp7qIV36/", "img": "", "int_total": 20, "int_pauta": 0, "int_suma": 20}], "comment": "Menor alcance del semestre. <b>Vuelta al cole</b> fue el mejor contenido orgánico."}, {"m": "Abr 2025", "ym": "2025-04", "seg": 103, "tot": 514, "int": 6815, "intOrg": 341, "intPaid": 6474, "reach": 58702, "views": 222919, "inv": 96781, "cpr": 73.85, "cpc": 150.98, "nota": "", "top3": [{"rank": "#1", "fecha": "21 Abr", "tipo": "Imagen", "desc": "Interacción — nombre de tu mascota", "int": 18, "likes": 11, "comments": 0, "shares": 7, "saved": 0, "link": "https://www.instagram.com/p/DIthO1-x7H8/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/491438757_17868305616359651_8074518002713834080_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af9r-yt-tV_iVnpYAuflqY7kwiM37SUodV7g0Rsf4qwdYQ&oe=6A3BCB80", "int_total": 1440, "int_pauta": 1422, "int_suma": 1440}, {"rank": "#2", "fecha": "29 Abr", "tipo": "Imagen", "desc": "Día del Animal", "int": 26, "likes": 22, "comments": 0, "shares": 0, "saved": 4, "link": "https://www.instagram.com/p/DJCAsljRcE0/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/494585364_17869291671359651_3710717954910688069_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-WJyxYLyuDVCf5skmykflxxyJpTAezirbOmZ5zXT1WRA&oe=6A3BC481", "int_total": 26, "int_pauta": 0, "int_suma": 26}, {"rank": "#3", "fecha": "7 Abr", "tipo": "Carrusel", "desc": "", "int": 21, "likes": 18, "comments": 3, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DIJeJ2goSZ7/", "img": "", "int_total": 21, "int_pauta": 0, "int_suma": 21}], "comment": "El post '¿Cómo se llama tu mascota?' generó 1.440 interacciones. Mejor mes de crecimiento del Q1."}, {"m": "May 2025", "ym": "2025-05", "seg": 40, "tot": 554, "int": 4055, "intOrg": 203, "intPaid": 3852, "reach": 130308, "views": 387307, "inv": 113966, "cpr": 46.68, "cpc": 88.59, "nota": "", "top3": [{"rank": "#1", "fecha": "17 May", "tipo": "Imagen", "desc": "Día del Reciclaje", "int": 23, "likes": 23, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DJwQIxmxsOo/", "img": "https://scontent-lhr11-1.cdninstagram.com/v/t51.82787-15/499470490_17871537924359651_2115346805051050766_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8FTSf7D1N5iEzAWrL-MYKciWocR8ymmrDD2EMD-n9XKg&oe=6A3BDB7E", "int_total": 1142, "int_pauta": 1119, "int_suma": 1142}, {"rank": "#2", "fecha": "1 May", "tipo": "Carrusel", "desc": "Día del Trabajador — humor mascotas", "int": 42, "likes": 35, "comments": 0, "shares": 0, "saved": 7, "link": "https://www.instagram.com/p/DJHKeTcRB7N/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/494835618_17869530336359651_1901862409176640444_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8hO2rMBQpZ9bCLc1C0MRfxS3bDY_XgwIvDx7hNEmDvQw&oe=6A3BDB2E", "int_total": 42, "int_pauta": 0, "int_suma": 42}, {"rank": "#3", "fecha": "23 May", "tipo": "Imagen", "desc": "Gato en pie de cama — humor", "int": 19, "likes": 16, "comments": 2, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DJ_6rJfxEu5/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/499558052_17872343178359651_7770472470553177472_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-uXCbhpYs4huWJ8GSq2T_BHa-AtGQHhNjO_VR1fPkNCA&oe=6A3BE976", "int_total": 19, "int_pauta": 0, "int_suma": 19}], "comment": "Alcance más alto del año hasta la fecha (130.308). <b>Ficha Perro Cachorro logró CPR $1,26</b> en pauta."}, {"m": "Jun 2025", "ym": "2025-06", "seg": 59, "tot": 613, "int": 12082, "intOrg": 133, "intPaid": 11949, "reach": 130308, "views": 278989, "inv": 114851, "cpr": 37.87, "cpc": 142.5, "nota": "", "top3": [{"rank": "#1", "fecha": "20 Jun", "tipo": "Imagen", "desc": "Día de la Bandera", "int": 30, "likes": 28, "comments": 0, "shares": 1, "saved": 1, "link": "https://www.instagram.com/p/DLIHyWVR10C/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/510441097_17875979487359651_7609212078920347606_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af_TVmpbyvht7_7trXlTPM5ZVa6YXc5VMGdgIabnJOk_AA&oe=6A3BD8FE", "int_total": 6803, "int_pauta": 6773, "int_suma": 6803}, {"rank": "#2", "fecha": "5 Jun", "tipo": "Imagen", "desc": "", "int": 22, "likes": 19, "comments": 0, "shares": 0, "saved": 3, "link": "https://www.instagram.com/p/DKhSOtexncm/", "img": "", "int_total": 22, "int_pauta": 0, "int_suma": 22}, {"rank": "#3", "fecha": "25 Jun", "tipo": "Imagen", "desc": "Momentos Coope — confianza y amor", "int": 19, "likes": 17, "comments": 2, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DLU94SXxHGr/", "img": "https://scontent-lhr8-1.cdninstagram.com/v/t51.82787-15/512138445_17876593917359651_1552418487433147309_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8eEwKYjI0RZ8uwPo_zFQodpTup-HeO2NDs8b9-gbziuA&oe=6A3BDFC9", "int_total": 19, "int_pauta": 0, "int_suma": 19}], "comment": "Mejor mes del año. <b>Día de la Bandera: 6.803 interacciones</b>, posteo orgánico histórico. Gato come pasto: CPR $1,02 en pauta."}, {"m": "Jul 2025", "ym": "2025-07", "seg": 181, "tot": 794, "int": 11001, "intOrg": 1100, "intPaid": 9901, "reach": 68133, "views": 220452, "inv": 106271, "cpr": 35.94, "cpc": 138.92, "nota": "⚠ Sorteo", "top3": [{"rank": "#1", "fecha": "9 Jul", "tipo": "Imagen", "desc": "Día de la Independencia", "int": 32, "likes": 27, "comments": 2, "shares": 1, "saved": 2, "link": "https://www.instagram.com/p/DL5DB4gxr2U/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/518272306_17878334901359651_349122969363892948_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af9-dDOJJuB1IqTI1aVXLV8rba9exGhZDsL_L503j8kKVA&oe=6A3BF951", "int_total": 6290, "int_pauta": 6258, "int_suma": 6290}, {"rank": "#2", "fecha": "11 Jul", "tipo": "Imagen", "desc": "Alimento perro cachorro y adulto", "int": 26, "likes": 24, "comments": 1, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DL-Mi2uRQoE/", "img": "https://scontent-lhr11-1.cdninstagram.com/v/t51.82787-15/518211444_17878583520359651_1222631558061731608_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-tN2AmnAg2jVtcylu5kGZY4Z8GQWCsux5Du0VGr4ZiPA&oe=6A3BD3F9", "int_total": 26, "int_pauta": 0, "int_suma": 26}, {"rank": "#3", "fecha": "25 Jul", "tipo": "Imagen", "desc": "Alimento gato sabores — 5 estrellas", "int": 25, "likes": 21, "comments": 1, "shares": 1, "saved": 2, "link": "https://www.instagram.com/p/DMiMlNWRA2M/", "img": "https://scontent-lhr11-1.cdninstagram.com/v/t51.82787-15/524148345_17880345525359651_1018803123918104189_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-tRm4phqMdo9DUbTbpLjiloy3aID3Yjcp29vuE5LlCSw&oe=6A3BED76", "int_total": 25, "int_pauta": 0, "int_suma": 25}], "comment": "⚠ Mes con sorteo. Pico atípico de seguidores (181, 141 del sorteo). <b>Día de la Independencia: 6.290 interacciones orgánicas.</b>"}, {"m": "Ago 2025", "ym": "2025-08", "seg": 45, "tot": 839, "int": 6065, "intOrg": 303, "intPaid": 5762, "reach": 54713, "views": 221996, "inv": 133948, "cpr": 34.81, "cpc": 175.55, "nota": "", "top3": [{"rank": "#1", "fecha": "13 Ago", "tipo": "Carrusel", "desc": "Lengua del gato — educativo", "int": 17, "likes": 16, "comments": 0, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DNS9VciNyaj/", "img": "https://scontent-lhr11-1.cdninstagram.com/v/t51.82787-15/532266922_17882702226359651_588162471571067602_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8l9xsO_JTzl1A01dKeTnMIJmOf9Ap3jJ5ezU24z6AhDQ&oe=6A3BF7A0", "int_total": 936, "int_pauta": 919, "int_suma": 936}, {"rank": "#2", "fecha": "28 Ago", "tipo": "Imagen", "desc": "", "int": 19, "likes": 16, "comments": 1, "shares": 1, "saved": 1, "link": "https://www.instagram.com/p/DN5yq9ujb-3/", "img": "", "int_total": 19, "int_pauta": 0, "int_suma": 19}, {"rank": "#3", "fecha": "4 Ago", "tipo": "Imagen", "desc": "", "int": 16, "likes": 16, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DM8HaGWRaBU/", "img": "", "int_total": 16, "int_pauta": 0, "int_suma": 16}], "comment": "Día del Niño: mejor contenido (2.668 int). Lengua del gato con buen CTR en carrusel educativo."}, {"m": "Sep 2025", "ym": "2025-09", "seg": 25, "tot": 864, "int": 6706, "intOrg": 335, "intPaid": 6371, "reach": 69304, "views": 251434, "inv": 131891, "cpr": 34.4, "cpc": 150.39, "nota": "", "top3": [{"rank": "#1", "fecha": "21 Sep", "tipo": "Imagen", "desc": "Día de la Primavera", "int": 16, "likes": 16, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DO3lv32DepA/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/551452569_17887415133359651_5640153492814381540_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-kH7IUcROoJxeZauyiwahLFij2Y_sJa6sQQKvGXVRc-w&oe=6A3BE5DE", "int_total": 1329, "int_pauta": 1313, "int_suma": 1329}, {"rank": "#2", "fecha": "5 Sep", "tipo": "Imagen", "desc": "Alimento gato pollo y pescado", "int": 16, "likes": 15, "comments": 0, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DOOSK1gjTjh/", "img": "https://scontent-lhr8-1.cdninstagram.com/v/t51.82787-15/542863152_17885462217359651_571192765141659260_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-9jL3b-Mf8at7cx2Ds9v1jELdvjByHtk2M1i7kQ1AVkA&oe=6A3BE4D9", "int_total": 16, "int_pauta": 0, "int_suma": 16}, {"rank": "#3", "fecha": "17 Sep", "tipo": "Imagen", "desc": "Alimento gatos y perros — líneas", "int": 15, "likes": 15, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DOtS1oijRIe/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/549704011_17886889326359651_894706855576868567_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8XaLHLfLMUQwHfiWRFJyWjVL0es1DJ0rfxmRXYJaCzdg&oe=6A3BD3D5", "int_total": 15, "int_pauta": 0, "int_suma": 15}], "comment": "Día de la Primavera mejor orgánico (1.329 int). Tres campañas de tráfico al perfil con CPR entre $63 y $82."}, {"m": "Oct 2025", "ym": "2025-10", "seg": 6, "tot": 870, "int": 4398, "intOrg": 220, "intPaid": 4178, "reach": 68436, "views": 277688, "inv": 140021, "cpr": 38.39, "cpc": 150.56, "nota": "", "top3": [{"rank": "#1", "fecha": "20 Oct", "tipo": "Carrusel", "desc": "Tips pulgas y garrapatas perros", "int": 16, "likes": 15, "comments": 1, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DQCQzTfgNVJ/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/566724558_17890704213359651_934405473165403251_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af9MsR5eiaCkzy3S3fK5wjn5Bwyfg9Ldj4D0bB5ZFK4rmg&oe=6A43B520", "int_total": 573, "int_pauta": 557, "int_suma": 573}, {"rank": "#2", "fecha": "7 Oct", "tipo": "Imagen", "desc": "Alimento perro adulto carne 20kg", "int": 21, "likes": 20, "comments": 0, "shares": 1, "saved": 0, "link": "https://www.instagram.com/p/DPhAZjIAabe/", "img": "https://scontent-lhr8-1.cdninstagram.com/v/t51.82787-15/561255773_17889258873359651_8285203052919597964_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af_AsFg65LXFur1MNnGTHw7gh9tdqMlRAdtyrN-WUILLDQ&oe=6A3BC462", "int_total": 468, "int_pauta": 447, "int_suma": 468}, {"rank": "#3", "fecha": "19 Oct", "tipo": "Imagen", "desc": "Día de la Madre — mascotas", "int": 17, "likes": 15, "comments": 2, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DP_r_xbjc8D/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/566819066_17890589178359651_4061870390386671845_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8PMCWglYogBECwS7PBQiMZZwnaDx9oJaNjcQ9lQQUb0w&oe=6A43C8DC", "int_total": 422, "int_pauta": 405, "int_suma": 422}], "comment": "Mes más bajo en seguidores (6 nuevos). Cambio de público objetivo a Zona Sur PBA impacta en alcance."}, {"m": "Nov 2025", "ym": "2025-11", "seg": 30, "tot": 900, "int": 4715, "intOrg": 236, "intPaid": 4479, "reach": 61221, "views": 207543, "inv": 141748, "cpr": 35.38, "cpc": 135.39, "nota": "", "top3": [{"rank": "#1", "fecha": "30 Nov", "tipo": "Imagen", "desc": "Día Nacional del Mate", "int": 21, "likes": 21, "comments": 0, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DRrnlqUCtYf/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/587057632_17895150924359651_7899260736088389037_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af_UwygCCTOrM55WNnFBtIVrj0KUrv1usYJbSzgMfVhFCw&oe=6A43B1DC", "int_total": 2224, "int_pauta": 2203, "int_suma": 2224}, {"rank": "#2", "fecha": "20 Nov", "tipo": "Imagen", "desc": "", "int": 12, "likes": 11, "comments": 1, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DRR3wHMii1I/", "img": "", "int_total": 492, "int_pauta": 480, "int_suma": 492}, {"rank": "#3", "fecha": "26 Nov", "tipo": "Carrusel", "desc": "Alergias en perros y gatos", "int": 19, "likes": 17, "comments": 2, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DRh95HOCoYp/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/586687942_17894736942359651_8282909281163140998_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-RJ9CfVX_1yXU-p-GiJ3JOpiuv7aDfhtapoyCxKt5IYw&oe=6A43CA10", "int_total": 417, "int_pauta": 398, "int_suma": 417}], "comment": "<b>Día del Mate mejor orgánico</b> (2.224 int). Cuánto come tu mascota: mejor campaña pauta del mes (CPR $2,71)."}, {"m": "Dic 2025", "ym": "2025-12", "seg": 17, "tot": 917, "int": 9926, "intOrg": 198, "intPaid": 9728, "reach": 87834, "views": 225361, "inv": 147350, "cpr": 30.84, "cpc": 144.53, "nota": "", "top3": [{"rank": "#1", "fecha": "10 Dic", "tipo": "Imagen", "desc": "", "int": 29, "likes": 25, "comments": 2, "shares": 0, "saved": 2, "link": "https://www.instagram.com/p/DSFXn1DgCEW/", "img": "", "int_total": 1399, "int_pauta": 1370, "int_suma": 1399}, {"rank": "#2", "fecha": "25 Dic", "tipo": "Imagen", "desc": "Felices Fiestas", "int": 27, "likes": 26, "comments": 0, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DSq6yhwiI1p/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/587785633_17898030537359651_6114392762804370737_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-5IMnDYjzT2uvbqUB2nG4DYGHS-PqUK-CH6xFNVSMQGg&oe=6A43C2E3", "int_total": 1238, "int_pauta": 1211, "int_suma": 1238}, {"rank": "#3", "fecha": "23 Dic", "tipo": "Imagen", "desc": "Campaña antipirotecnia", "int": 39, "likes": 32, "comments": 3, "shares": 2, "saved": 2, "link": "https://www.instagram.com/p/DSnFFX4gCVg/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/601925250_17897842863359651_7754479745806898411_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-YL8J3mlfPHEgG4x3tekJQPGL2GjoQ5tN6cv2-O3tgQQ&oe=6A43D4BA", "int_total": 39, "int_pauta": 0, "int_suma": 39}], "comment": "<b>Hocico perro: mejor CPR histórico en pauta ($1,22)</b>. Antipirotecnia: fuerte en pauta y orgánico."}, {"m": "Ene 2026", "ym": "2026-01", "seg": 249, "tot": 1164, "int": 13822, "intOrg": 6911, "intPaid": 6911, "reach": 53932, "views": 196163, "inv": 144064, "cpr": 27.43, "cpc": 117.13, "nota": "⚠ Sorteo", "top3": [{"rank": "#1", "fecha": "9 Ene", "tipo": "Imagen", "desc": "Sorteo año nuevo 2026", "int": 5824, "likes": 238, "comments": 48, "shares": 5046, "saved": 492, "link": "https://www.instagram.com/p/DTTXjdEgSHU/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/611328955_17899972836359651_4308605370756088704_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af80JfXNCWx65bcZn72AsxSEGvo98tUL2pZU3QluxG4djg&oe=6A43D566", "int_total": 5824, "int_pauta": 0, "int_suma": 5824}, {"rank": "#2", "fecha": "1 Ene", "tipo": "Imagen", "desc": "Año Nuevo 2026 — brindis", "int": 25, "likes": 23, "comments": 0, "shares": 2, "saved": 0, "link": "https://www.instagram.com/p/DS8uo8ugEWQ/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/608319597_17898917010359651_6611567336547379056_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af_NJKpYaM1GdiF5imp7RobOnFg1je5j2uXEIUjDH2Bgtg&oe=6A43B525", "int_total": 3403, "int_pauta": 3378, "int_suma": 3403}, {"rank": "#3", "fecha": "9 Ene", "tipo": "Imagen", "desc": "", "int": 22, "likes": 20, "comments": 1, "shares": 0, "saved": 1, "link": "https://www.instagram.com/p/DTSnf4JDS91/", "img": "", "int_total": 305, "int_pauta": 283, "int_suma": 305}], "comment": "⚠ Mes con sorteo. 249 seguidores nuevos (187 del sorteo). Golpe de calor: CPR $49,86 en pauta de tráfico."}, {"m": "Feb 2026", "ym": "2026-02", "seg": 20, "tot": 1184, "int": 6288, "intOrg": 63, "intPaid": 6225, "reach": 44993, "views": 156984, "inv": 141656, "cpr": 35.72, "cpc": 80.4, "nota": "", "top3": [{"rank": "#1", "fecha": "20 Feb", "tipo": "Imagen", "desc": "Día del Gato — Socks Casa Blanca", "int": 34, "likes": 25, "comments": 2, "shares": 2, "saved": 5, "link": "https://www.instagram.com/p/DU-w5yDDX6v/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/639697133_17905368546359651_1076544796427338462_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8b9awLRwiUIlHlbji3UQwKnYS_FAtMoL_3J5FotqTm1Q&oe=6A43BF27", "int_total": 2516, "int_pauta": 2482, "int_suma": 2516}, {"rank": "#2", "fecha": "13 Feb", "tipo": "Carrusel", "desc": "Pelaje gatos por estación", "int": 19, "likes": 14, "comments": 3, "shares": 0, "saved": 2, "link": "https://www.instagram.com/p/DUs2RNkDXkl/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/631481164_17904376305359651_1988477090181438272_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-nSMwYyIk8G7Js0ZjzNBsFTchd0uggPTU-qirUIcUXPg&oe=6A43DB9C", "int_total": 894, "int_pauta": 875, "int_suma": 894}, {"rank": "#3", "fecha": "6 Feb", "tipo": "Imagen", "desc": "Chillido gato — dato curioso", "int": 28, "likes": 19, "comments": 2, "shares": 0, "saved": 7, "link": "https://www.instagram.com/p/DUauip_DZjh/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/629429024_17903458098359651_5705380665015871995_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af_ALxqIaPAPkNfT2M6atj9WQFF2wLHf75cXhlVfYs1PMA&oe=6A43DCCE", "int_total": 28, "int_pauta": 0, "int_suma": 28}], "comment": "<b>Día del Gato mejor orgánico</b> (2.516 int). Chillido gato: CTR más alto de toda la cuenta (7,18%)."}, {"m": "Mar 2026", "ym": "2026-03", "seg": 27, "tot": 1211, "int": 3487, "intOrg": 174, "intPaid": 3313, "reach": 50279, "views": 138212, "inv": 141270, "cpr": 40.03, "cpc": 127.04, "nota": "", "top3": [{"rank": "#1", "fecha": "17 Mar", "tipo": "Imagen", "desc": "Gatos naranjas — dato curioso", "int": 29, "likes": 13, "comments": 3, "shares": 13, "saved": 0, "link": "https://www.instagram.com/p/DV_ZlxojSIo/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/654020783_17909244228359651_7464170497297629908_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af9OdIA1r91HrZQPvJlV8sXeqTsfxwljLj2PdSbHUt-h8g&oe=6A43C2F8", "int_total": 1697, "int_pauta": 1668, "int_suma": 1697}, {"rank": "#2", "fecha": "3 Mar", "tipo": "Imagen", "desc": "", "int": 12, "likes": 10, "comments": 2, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DVb8iOaDYqw/", "img": "", "int_total": 557, "int_pauta": 545, "int_suma": 557}, {"rank": "#3", "fecha": "12 Mar", "tipo": "Imagen", "desc": "Alimento perro adulto carne 20kg", "int": 20, "likes": 15, "comments": 1, "shares": 0, "saved": 4, "link": "https://www.instagram.com/p/DVyfjvgDSa0/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/651514551_17908457775359651_146031412604411538_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af9fHwvH7oKtfk8ibfrnC92M8zLRpYL6TkgEf8d3YGPpDQ&oe=6A43BD7A", "int_total": 537, "int_pauta": 517, "int_suma": 537}], "comment": "Gatos naranjas: 56 comentarios, mejor post educativo del año. Perro scrolleando: CPR $1,94 en pauta."}, {"m": "Abr 2026", "ym": "2026-04", "seg": 56, "tot": 1267, "int": 8419, "intOrg": 421, "intPaid": 7998, "reach": 43979, "views": 120939, "inv": 140264, "cpr": 37.91, "cpc": 174.89, "nota": "", "top3": [{"rank": "#1", "fecha": "4 Abr", "tipo": "Imagen", "desc": "Día animales callejeros", "int": 15, "likes": 11, "comments": 1, "shares": 3, "saved": 0, "link": "https://www.instagram.com/p/DWte-lEAKeE/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/659629898_17912373111359651_564805554459358006_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af8XL3SbX2x2vIqdrZdpHZnoRdLMRBECsxx9bHFVE3GAA&oe=6A43B8D1", "int_total": 3147, "int_pauta": 3132, "int_suma": 3147}, {"rank": "#2", "fecha": "29 Abr", "tipo": "Imagen", "desc": "Día del Animal — Dr. Albarracín", "int": 13, "likes": 12, "comments": 1, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DXt26zrDXrH/", "img": "https://scontent-lhr8-2.cdninstagram.com/v/t51.82787-15/683676301_17916299517359651_6850287661496514747_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-yKZQJk-GZBPzrTdDdS-924wncMHN8zKuT-hJjdff0XA&oe=6A43BE27", "int_total": 1017, "int_pauta": 1004, "int_suma": 1017}, {"rank": "#3", "fecha": "22 Abr", "tipo": "Carrusel", "desc": "Tabla de consumo perro", "int": 16, "likes": 14, "comments": 2, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DXcMVtLDUKe/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/671163427_17915179389359651_3602309621048896487_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-kk4qvkKwk6vF3XX-aaoFJwZ4Q8rh8KXjHsFeFiOzP0w&oe=6A43C0CE", "int_total": 394, "int_pauta": 378, "int_suma": 394}], "comment": "Se lanzan campañas de <b>Puntos de Venta</b>. Mes no Maltrato: 10.212 interacciones pautadas con CPR $1,47."}, {"m": "May 2026", "ym": "2026-05", "seg": 56, "tot": 1323, "int": 8419, "intOrg": 421, "intPaid": 7998, "reach": 43979, "views": 120939, "inv": 140264, "cpr": 37.91, "cpc": 174.89, "nota": "", "top3": [{"rank": "#1", "fecha": "1 May", "tipo": "Imagen", "desc": "Día del Trabajador — perro trabajador", "int": 19, "likes": 16, "comments": 0, "shares": 1, "saved": 2, "link": "https://www.instagram.com/p/DXy5rWiDR0h/", "img": "https://scontent-lhr6-1.cdninstagram.com/v/t51.82787-15/684219062_17916617697359651_5347627233185989001_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af-CKh5-hj98usr-LEet0hxjEbpvj_0F8YotwPFelvB6VA&oe=6A43ACEC", "int_total": 1524, "int_pauta": 1505, "int_suma": 1524}, {"rank": "#2", "fecha": "19 May", "tipo": "Imagen", "desc": "ExpoVeterinarias — stand N°182", "int": 10, "likes": 9, "comments": 1, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DYhmqPLDeT6/", "img": "https://scontent-lhr6-2.cdninstagram.com/v/t51.82787-15/701901172_17919486984359651_6105982527166459769_n.jpg?stp=dst-jpg_e35_tt6&oh=00_Af9ldHJAqZoJkiohRJ9WOpCtJif8S_mpEMsj9ArKGyPXtw&oe=6A43C578", "int_total": 530, "int_pauta": 520, "int_suma": 530}, {"rank": "#3", "fecha": "17 May", "tipo": "Imagen", "desc": "", "int": 9, "likes": 8, "comments": 1, "shares": 0, "saved": 0, "link": "https://www.instagram.com/p/DYcNLGpDYVF/", "img": "", "int_total": 483, "int_pauta": 474, "int_suma": 483}], "comment": "Expansión campañas PdV. <b>ExpoVet</b> presencia física. 17 PdV activos, inversión total $710K."}, {"ym": "2026-06", "m": "Jun 2026", "seg": 44, "tot": 1409, "int": 142308, "intOrg": 120550, "reach": 0, "inv": 330844.7, "res": 14797, "cpr": 22.36, "top3": [{"rank": "#1", "fecha": "10 Jun", "tipo": "Imagen", "desc": "", "int": 22, "likes": 20, "comments": 1, "shares": 0, "saved": 1, "int_total": 4125, "int_pauta": 4103, "int_suma": 4125, "link": "https://www.instagram.com/p/DZaVRdlDWLc/", "img": ""}, {"rank": "#2", "fecha": "18 Jun", "tipo": "Imagen", "desc": "", "int": 10, "likes": 10, "comments": 0, "shares": 0, "saved": 0, "int_total": 987, "int_pauta": 977, "int_suma": 987, "link": "https://www.instagram.com/p/DZvN9nnDG2a/", "img": ""}, {"rank": "#3", "fecha": "4 Jun", "tipo": "Carrusel", "desc": "", "int": 12, "likes": 12, "comments": 0, "shares": 0, "saved": 0, "int_total": 336, "int_pauta": 324, "int_suma": 336, "link": "https://www.instagram.com/p/DZKl5SjDWp3/", "img": ""}], "nota": null}];
+const ADS_RAW=[{"name": "Tráfico - PdV - Mr Dog RC", "obj": "Tráfico", "status": "Activa", "spend": 44296, "impr": 28297, "reach": 13034, "clicks": 596, "res": 227, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Mr Dog VM", "obj": "Tráfico", "status": "Activa", "spend": 44075, "impr": 26789, "reach": 11694, "clicks": 613, "res": 226, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Vet Asociadas", "obj": "Tráfico", "status": "Activa", "spend": 43974, "impr": 28683, "reach": 8049, "clicks": 525, "res": 179, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Casa Fioretti", "obj": "Tráfico", "status": "Activa", "spend": 42844, "impr": 27356, "reach": 17415, "clicks": 716, "res": 293, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Alcance - PdV - Don Antonio", "obj": "Tráfico", "status": "Pausada", "spend": 42414, "impr": 155191, "reach": 107552, "clicks": 197, "res": 107552, "resType": "Alcance", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico al perfil - Ficha perro - May 2026", "obj": "Tráfico", "status": "Activa", "spend": 29990, "impr": 15995, "reach": 11247, "clicks": 264, "res": 275, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - El Asturiano", "obj": "Tráfico", "status": "Activa", "spend": 27064, "impr": 20647, "reach": 8893, "clicks": 438, "res": 160, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Mundo Canino", "obj": "Tráfico", "status": "Activa", "spend": 27002, "impr": 19151, "reach": 10828, "clicks": 392, "res": 184, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - El Refugio", "obj": "Tráfico", "status": "Activa", "spend": 26803, "impr": 16787, "reach": 6638, "clicks": 361, "res": 143, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Lab. Nutrición Prof.", "obj": "Tráfico", "status": "Activa", "spend": 26738, "impr": 15685, "reach": 7983, "clicks": 315, "res": 145, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Distrib. Nehuel", "obj": "Tráfico", "status": "Activa", "spend": 26701, "impr": 16643, "reach": 7161, "clicks": 363, "res": 151, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Vet. Pergamino", "obj": "Tráfico", "status": "Activa", "spend": 26514, "impr": 17677, "reach": 8801, "clicks": 368, "res": 150, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Distropets", "obj": "Tráfico", "status": "Activa", "spend": 26379, "impr": 16439, "reach": 8515, "clicks": 323, "res": 134, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Coop. Agrop. Tandil", "obj": "Tráfico", "status": "Activa", "spend": 26302, "impr": 17225, "reach": 8946, "clicks": 457, "res": 175, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico al perfil - Gatos y Cajas - May 2026", "obj": "Tráfico", "status": "Activa", "spend": 24990, "impr": 20327, "reach": 13632, "clicks": 326, "res": 330, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-05", "inc": true}, {"name": "Tráfico - PdV - Forrajería Don Feli", "obj": "Tráfico", "status": "Pausada", "spend": 24506, "impr": 17588, "reach": 13677, "clicks": 347, "res": 137, "resType": "LPV", "grupo": "PDV", "mes": "2026-05", "inc": true}, {"name": "Tráfico al perfil - Perros pulgas - Oct 2025", "obj": "Tráfico", "status": "Activa", "spend": 23991, "impr": 24958, "reach": 14226, "clicks": 315, "res": 312, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-10", "inc": true}, {"name": "Tráfico al perfil - Antipirotecnia - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 23982, "impr": 25632, "reach": 13393, "clicks": 459, "res": 468, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Tráfico al perfil - Cuidar el planeta - Nov 2025", "obj": "Tráfico", "status": "Activa", "spend": 22986, "impr": 27245, "reach": 13308, "clicks": 321, "res": 333, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-11", "inc": true}, {"name": "Tráfico al perfil - Cuanto come - Nov 2025", "obj": "Tráfico", "status": "Activa", "spend": 22984, "impr": 29990, "reach": 14111, "clicks": 308, "res": 320, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-11", "inc": true}, {"name": "Tráfico al perfil - Ficha gato - Nov 2025", "obj": "Tráfico", "status": "Activa", "spend": 22944, "impr": 35545, "reach": 17544, "clicks": 333, "res": 337, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-11", "inc": true}, {"name": "Tráfico al perfil - Día de la Sonrisa - Oct 2025", "obj": "Tráfico", "status": "Activa", "spend": 21987, "impr": 23852, "reach": 17613, "clicks": 183, "res": 186, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-10", "inc": true}, {"name": "Interacción - Extra 2 - Ago 2025", "obj": "Tráfico", "status": "Activa", "spend": 21856, "impr": 3109, "reach": 1967, "clicks": 9, "res": 614, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Tráfico al perfil - Sorteo - Ene 2026", "obj": "Tráfico", "status": "Activa", "spend": 21833, "impr": 16664, "reach": 8360, "clicks": 403, "res": 500, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-01", "inc": true}, {"name": "Interacción - ExpoVet - May 2026", "obj": "Tráfico", "status": "Activa", "spend": 21472, "impr": 3103, "reach": 2058, "clicks": 30, "res": 520, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-05", "inc": true}, {"name": "Tráfico al perfil - Papilas gustativas - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 19994, "impr": 11781, "reach": 7529, "clicks": 218, "res": 213, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Tráfico al perfil - Golpe de calor - Ene 2026", "obj": "Tráfico", "status": "Activa", "spend": 19992, "impr": 27667, "reach": 12600, "clicks": 397, "res": 401, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-01", "inc": true}, {"name": "Tráfico al perfil - Ficha perro - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 19992, "impr": 18464, "reach": 8294, "clicks": 325, "res": 332, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Tráfico al perfil - Ficha gato - Ene 2026", "obj": "Tráfico", "status": "Activa", "spend": 19990, "impr": 23580, "reach": 11460, "clicks": 317, "res": 314, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-01", "inc": true}, {"name": "Tráfico al perfil - Ficha Cachorro - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 19990, "impr": 14625, "reach": 7900, "clicks": 250, "res": 265, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Interacción - Perro scrolleando - Mar 2026", "obj": "Tráfico", "status": "Activa", "spend": 19990, "impr": 24017, "reach": 14155, "clicks": 22, "res": 10279, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-03", "inc": true}, {"name": "Tráfico al perfil - Ficha perro - Mar 2026", "obj": "Tráfico", "status": "Activa", "spend": 19990, "impr": 20421, "reach": 9706, "clicks": 276, "res": 250, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-03", "inc": true}, {"name": "Tráfico al perfil - Ficha gato - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 19986, "impr": 16108, "reach": 9294, "clicks": 242, "res": 247, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Tráfico al perfil - Tabla de Consumo - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 19980, "impr": 18155, "reach": 10970, "clicks": 271, "res": 274, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Interacción - Varita gato - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 19979, "impr": 8388, "reach": 4514, "clicks": 11, "res": 961, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Interacción - Ficha perro - Mar 2026", "obj": "Tráfico", "status": "Activa", "spend": 19979, "impr": 4276, "reach": 1925, "clicks": 8, "res": 517, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-03", "inc": true}, {"name": "Interacción - Meme Karen - May 2026", "obj": "Tráfico", "status": "Activa", "spend": 19968, "impr": 22367, "reach": 14507, "clicks": 13, "res": 9254, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-05", "inc": true}, {"name": "Interacción - Gatos naranjas - Mar 2026", "obj": "Tráfico", "status": "Activa", "spend": 19962, "impr": 14381, "reach": 8218, "clicks": 9, "res": 1668, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-03", "inc": true}, {"name": "Tráfico al perfil - Bolsa Coop - Jun 2025", "obj": "Tráfico", "status": "Activa", "spend": 18979, "impr": 21278, "reach": 14329, "clicks": 374, "res": 388, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-06", "inc": true}, {"name": "Tráfico al perfil - Ficha alimento - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 17988, "impr": 18231, "reach": 12870, "clicks": 227, "res": 218, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Tráfico al perfil - Bolsa y Gato - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 17978, "impr": 18796, "reach": 13644, "clicks": 266, "res": 285, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Tráfico al perfil - Peso de tu perro - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 17959, "impr": 20173, "reach": 15102, "clicks": 207, "res": 218, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Tráfico al perfil - Rutina mascota - Mar 2025", "obj": "Tráfico", "status": "Activa", "spend": 17822, "impr": 46174, "reach": 31620, "clicks": 374, "res": 385, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-01", "inc": true}, {"name": "Interacción - Sabores alimento - Jul 2025", "obj": "Tráfico", "status": "Activa", "spend": 15995, "impr": 6180, "reach": 3440, "clicks": 9, "res": 879, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-07", "inc": true}, {"name": "Interacción - Antipirotecnia - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 15992, "impr": 17770, "reach": 10613, "clicks": 22, "res": 3395, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Interacción - Gato come pasto - Jun 2025", "obj": "Tráfico", "status": "Activa", "spend": 15983, "impr": 24513, "reach": 22834, "clicks": 51, "res": 15656, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-06", "inc": true}, {"name": "Tráfico al perfil - Pérdida pelo gato - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 15496, "impr": 19823, "reach": 8183, "clicks": 247, "res": 247, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Tráfico al perfil - Chillido gato - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 15446, "impr": 10430, "reach": 6991, "clicks": 749, "res": 747, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Interacción - Pupilas gustativas - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 15196, "impr": 19351, "reach": 13437, "clicks": 25, "res": 9649, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Tráfico al perfil - Gato en pie cama - May 2025", "obj": "Tráfico", "status": "Activa", "spend": 15155, "impr": 15758, "reach": 10567, "clicks": 382, "res": 392, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-05", "inc": true}, {"name": "Interacción - Tabla de consumo - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 15000, "impr": 2629, "reach": 1739, "clicks": 32, "res": 378, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Tráfico al perfil - Ficha Perro cachorro - May 2025", "obj": "Tráfico", "status": "Activa", "spend": 15000, "impr": 9034, "reach": 5978, "clicks": 162, "res": 178, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-05", "inc": true}, {"name": "Interacción - Vuelta al cole - Mar 2025", "obj": "Tráfico", "status": "Activa", "spend": 15000, "impr": 14409, "reach": 9889, "clicks": 13, "res": 2079, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-03", "inc": true}, {"name": "Tráfico al perfil - Cuidado Bienestar - Feb 2025", "obj": "Tráfico", "status": "Pausada", "spend": 15000, "impr": 16392, "reach": 10223, "clicks": 749, "res": 734, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-02", "inc": true}, {"name": "Interacción - Patas mojadas - Ene 2025", "obj": "Tráfico", "status": "Activa", "spend": 14998, "impr": 17167, "reach": 11012, "clicks": 52, "res": 2790, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-01", "inc": true}, {"name": "Interacción - Ficha gato - Feb 2025", "obj": "Tráfico", "status": "Pausada", "spend": 14997, "impr": 3651, "reach": 2484, "clicks": 7, "res": 891, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-02", "inc": true}, {"name": "Tráfico al perfil - Promoción gato - Mar 2026", "obj": "Tráfico", "status": "Activa", "spend": 14977, "impr": 15332, "reach": 8620, "clicks": 197, "res": 189, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-03", "inc": true}, {"name": "Interacción - Mes no Maltrato - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 14975, "impr": 17201, "reach": 11327, "clicks": 19, "res": 10212, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Interacción - Ficha gato - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 14973, "impr": 2793, "reach": 1493, "clicks": 3, "res": 436, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Interacción - Hocico perro - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 14971, "impr": 22812, "reach": 18113, "clicks": 17, "res": 12308, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Interacción - Perros pulgas - Oct 2025", "obj": "Tráfico", "status": "Activa", "spend": 14969, "impr": 4751, "reach": 3010, "clicks": 29, "res": 557, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-10", "inc": true}, {"name": "Tráfico al perfil - Ficha Gato (pollo) - Abr 2025", "obj": "Tráfico", "status": "Pausada", "spend": 14963, "impr": 12866, "reach": 8036, "clicks": 137, "res": 144, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-04", "inc": true}, {"name": "Tráfico al perfil - Reel promoción perro - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 14962, "impr": 11325, "reach": 8175, "clicks": 206, "res": 203, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Interacción - Momentos Coope - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 14960, "impr": 5218, "reach": 2644, "clicks": 6, "res": 555, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Tráfico al perfil - Gatos naranjas - Mar 2026", "obj": "Tráfico", "status": "Activa", "spend": 14958, "impr": 9002, "reach": 6300, "clicks": 373, "res": 346, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-03", "inc": true}, {"name": "Tráfico al perfil - Mes no Maltrato - Abr 2026", "obj": "Tráfico", "status": "Activa", "spend": 14955, "impr": 5615, "reach": 4104, "clicks": 187, "res": 193, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2026-04", "inc": true}, {"name": "Interacción - Gatos y Cajas - May 2026", "obj": "Tráfico", "status": "Activa", "spend": 14950, "impr": 4979, "reach": 3600, "clicks": 35, "res": 599, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-05", "inc": true}, {"name": "Interacción - Ficha perro - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 14941, "impr": 2570, "reach": 1292, "clicks": 4, "res": 565, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "[MTR IG POST] - Año Nuevo 2026", "obj": "Tráfico", "status": "Activa", "spend": 14922, "impr": 19678, "reach": 15328, "clicks": 19, "res": 3378, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Interacción - Ficha perro cachorro - May 2025", "obj": "Tráfico", "status": "Activa", "spend": 14798, "impr": 31689, "reach": 23488, "clicks": 22, "res": 11726, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-05", "inc": true}, {"name": "Interacción - Ficha cachorro - Dic 2025", "obj": "Tráfico", "status": "Activa", "spend": 14240, "impr": 2250, "reach": 1477, "clicks": 1, "res": 326, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-12", "inc": true}, {"name": "Tráfico al perfil - Ficha Perro - Oct 2025", "obj": "Tráfico", "status": "Activa", "spend": 13996, "impr": 19033, "reach": 10463, "clicks": 214, "res": 216, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-10", "inc": true}, {"name": "Interacción - Cuanto come - Nov 2025", "obj": "Tráfico", "status": "Activa", "spend": 13995, "impr": 14104, "reach": 6979, "clicks": 19, "res": 5166, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-11", "inc": true}, {"name": "Tráfico al perfil - Ficha perro - Jun 2025", "obj": "Tráfico", "status": "Activa", "spend": 13989, "impr": 11692, "reach": 7809, "clicks": 114, "res": 120, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-06", "inc": true}, {"name": "Tráfico al perfil - Extra 1 - Ago 2025", "obj": "Tráfico", "status": "Activa", "spend": 13989, "impr": 11288, "reach": 8521, "clicks": 186, "res": 196, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Interacción - Cuidar el planeta - Nov 2025", "obj": "Tráfico", "status": "Activa", "spend": 13986, "impr": 3973, "reach": 2144, "clicks": 3, "res": 480, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-11", "inc": true}, {"name": "Tráfico al perfil - Comida y bolsa - Jul 2025", "obj": "Tráfico", "status": "Activa", "spend": 13981, "impr": 13030, "reach": 9858, "clicks": 163, "res": 164, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-07", "inc": true}, {"name": "Interacción - Ficha alimento - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 13980, "impr": 2413, "reach": 1412, "clicks": 8, "res": 480, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Tráfico al perfil - Ficha Perro - Ago 2025", "obj": "Tráfico", "status": "Pausada", "spend": 13978, "impr": 9007, "reach": 6444, "clicks": 150, "res": 158, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Interacción - Peso de tu perro - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 13975, "impr": 9354, "reach": 8131, "clicks": 14, "res": 3890, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Interacción - Bolsa y Gato - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 13972, "impr": 4458, "reach": 2792, "clicks": 3, "res": 668, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Tráfico al perfil - Lengua gato - Ago 2025", "obj": "Tráfico", "status": "Activa", "spend": 13967, "impr": 13394, "reach": 11035, "clicks": 248, "res": 251, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Tráfico al perfil - Sorteo - Jul 2025", "obj": "Tráfico", "status": "Activa", "spend": 13929, "impr": 7051, "reach": 4196, "clicks": 283, "res": 346, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-07", "inc": true}, {"name": "Interacción - Perro y bebé - Sep 2025", "obj": "Tráfico", "status": "Activa", "spend": 13909, "impr": 10720, "reach": 7246, "clicks": 7, "res": 1994, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-09", "inc": true}, {"name": "Interacción - Ficha gato - Nov 2025", "obj": "Tráfico", "status": "Activa", "spend": 13904, "impr": 2744, "reach": 1695, "clicks": 6, "res": 369, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-11", "inc": true}, {"name": "Interacción - Sorteo - Ene 2026", "obj": "Tráfico", "status": "Activa", "spend": 13152, "impr": 3039, "reach": 1641, "clicks": 13, "res": 451, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-01", "inc": true}, {"name": "Tráfico al perfil - Ficha perro - Jul 2025", "obj": "Tráfico", "status": "Activa", "spend": 12994, "impr": 8002, "reach": 5144, "clicks": 105, "res": 113, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-07", "inc": true}, {"name": "Interacción - Pérdida pelo gato - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 12992, "impr": 8672, "reach": 4645, "clicks": 29, "res": 875, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Tráfico al perfil - Zoomie - Feb 2025", "obj": "Tráfico", "status": "Pausada", "spend": 12982, "impr": 10760, "reach": 10064, "clicks": 264, "res": 268, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-02", "inc": true}, {"name": "Interacción - Chillidos gato - Feb 2026", "obj": "Tráfico", "status": "Activa", "spend": 12981, "impr": 9352, "reach": 5576, "clicks": 12, "res": 1188, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-02", "inc": true}, {"name": "Interacción - Verano gato - Ene 2026", "obj": "Tráfico", "status": "Activa", "spend": 12234, "impr": 8483, "reach": 5205, "clicks": 14, "res": 908, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-01", "inc": true}, {"name": "Interacción - Golpe de calor - Ene 2026", "obj": "Tráfico", "status": "Activa", "spend": 12226, "impr": 8260, "reach": 4837, "clicks": 9, "res": 993, "resType": "Interacciones", "grupo": "Marca", "mes": "2026-01", "inc": true}, {"name": "Alcance - Que edad tiene tu perro - May 2025", "obj": "Tráfico", "status": "Activa", "spend": 11999, "impr": 51864, "reach": 51864, "clicks": 15, "res": 51864, "resType": "Alcance", "grupo": "Marca", "mes": "2025-05", "inc": true}, {"name": "Tráfico al perfil - Concientización maltrato - Abr 2025", "obj": "Tráfico", "status": "Activa", "spend": 11991, "impr": 15985, "reach": 11076, "clicks": 196, "res": 194, "resType": "Visitas perfil", "grupo": "Marca", "mes": "2025-04", "inc": true}, {"name": "Interacción - Extra 1 - Ago 2025", "obj": "Tráfico", "status": "Activa", "spend": 11982, "impr": 1694, "reach": 1079, "clicks": 26, "res": 389, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Interacción - Gato bañándose - Jul 2025", "obj": "Tráfico", "status": "Activa", "spend": 11970, "impr": 20689, "reach": 18164, "clicks": 20, "res": 12028, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-07", "inc": true}, {"name": "Interacción - Lengua gato - Ago 2025", "obj": "Tráfico", "status": "Activa", "spend": 11965, "impr": 7033, "reach": 4754, "clicks": 64, "res": 919, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Interacción - Ficha perro - Ago 2025", "obj": "Tráfico", "status": "Pausada", "spend": 11937, "impr": 8011, "reach": 6093, "clicks": 2, "res": 2415, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-08", "inc": true}, {"name": "Interacción - Comida y bolsa - Jul 2025", "obj": "Tráfico", "status": "Activa", "spend": 11902, "impr": 3806, "reach": 2357, "clicks": 34, "res": 651, "resType": "Interacciones", "grupo": "Marca", "mes": "2025-07", "inc": true}, {"name": "Interacción - Momentos Coope - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 24975.55, "impr": 7510, "reach": 4253, "clicks": 22, "res": 1066, "grupo": "Marca", "mes": "2026-06", "i": 99, "inc": true}, {"name": "Tráfico al perfil - Modo Mundial - Junio 2026", "obj": "Tráfico", "status": "Activa", "spend": 37960.53, "impr": 28166, "reach": 16254, "clicks": 687, "res": 689, "grupo": "Marca", "mes": "2026-06", "i": 100, "inc": true}, {"name": "Interacción - Modo Mundial - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 36946.51, "impr": 24283, "reach": 15178, "clicks": 38, "res": 3081, "grupo": "Marca", "mes": "2026-06", "i": 101, "inc": true}, {"name": "Tráfico - Puntos de Venta - Tanda 3 - Junio 2026", "obj": "Tráfico", "status": "Activa", "spend": 99974.69, "impr": 71927, "reach": 34139, "clicks": 1448, "res": 503, "grupo": "PDV", "mes": "2026-06", "i": 102, "inc": true}, {"name": "Interacción - Resumen ExpoVet - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 14994.32, "impr": 2492, "reach": 1990, "clicks": 17, "res": 324, "grupo": "Marca", "mes": "2026-06", "i": 103, "inc": true}, {"name": "Interacción - Día Nacional del Perro - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 9995.48, "impr": 13392, "reach": 12791, "clicks": 13, "res": 8589, "grupo": "Marca", "mes": "2026-06", "i": 104, "inc": true}, {"name": "Tráfico - Puntos de Venta - Distropets", "obj": "Tráfico", "status": "Activa", "spend": 13616.28, "impr": 8959, "reach": 5336, "clicks": 191, "res": 84, "grupo": "PDV", "mes": "2026-06", "i": 105, "inc": true}, {"name": "Tráfico - Puntos de Venta - El Refugio", "obj": "Tráfico", "status": "Activa", "spend": 13154.19, "impr": 7371, "reach": 3474, "clicks": 166, "res": 54, "grupo": "PDV", "mes": "2026-06", "i": 106, "inc": true}, {"name": "Tráfico - Puntos de Venta - Veterinaria Pergamino", "obj": "Tráfico", "status": "Activa", "spend": 13469.41, "impr": 9307, "reach": 4859, "clicks": 195, "res": 59, "grupo": "PDV", "mes": "2026-06", "i": 107, "inc": true}, {"name": "Tráfico - Puntos de Venta - Distribuidora Nehuel", "obj": "Tráfico", "status": "Activa", "spend": 13295.04, "impr": 8502, "reach": 4204, "clicks": 166, "res": 63, "grupo": "PDV", "mes": "2026-06", "i": 108, "inc": true}, {"name": "Tráfico - Puntos de Venta - Cooperativa Agropecuaria de Tandil", "obj": "Tráfico", "status": "Activa", "spend": 13680.53, "impr": 10198, "reach": 5651, "clicks": 264, "res": 84, "grupo": "PDV", "mes": "2026-06", "i": 109, "inc": true}, {"name": "Tráfico - Puntos de Venta - Laboratorio de Nutrición Profesional", "obj": "Tráfico", "status": "Activa", "spend": 13247.77, "impr": 7564, "reach": 4319, "clicks": 158, "res": 51, "grupo": "PDV", "mes": "2026-06", "i": 110, "inc": true}, {"name": "Tráfico - Puntos de Venta - Mundo Canino", "obj": "Tráfico", "status": "Activa", "spend": 12605.73, "impr": 9182, "reach": 5688, "clicks": 225, "res": 81, "grupo": "PDV", "mes": "2026-06", "i": 111, "inc": true}, {"name": "Tráfico - Puntos de Venta - El Asturiano", "obj": "Tráfico", "status": "Activa", "spend": 12928.67, "impr": 12692, "reach": 6324, "clicks": 235, "res": 69, "grupo": "PDV", "mes": "2026-06", "i": 112, "inc": true}]
+const SL=[{"name": "El Asturiano", "vis": 877, "cb": 49, "loc": 18, "wa": 31}, {"name": "Cooperativa Agropecuaria de Tandil", "vis": 1010, "cb": 43, "loc": 20, "wa": 23}, {"name": "Casa Fioretti", "vis": 977, "cb": 37, "loc": 27, "wa": 10}, {"name": "Mundo Canino", "vis": 936, "cb": 30, "loc": 24, "wa": 6}, {"name": "Cooperativa Agraria Olavarría", "vis": 516, "cb": 28, "loc": 18, "wa": 10}, {"name": "Forrajería Don Feli", "vis": 693, "cb": 21, "loc": 13, "wa": 8}, {"name": "La Cerealera", "vis": 475, "cb": 21, "loc": 12, "wa": 9}, {"name": "Mr Dog Río Cuarto", "vis": 925, "cb": 20, "loc": 15, "wa": 5}, {"name": "Veterinaria Pergamino", "vis": 779, "cb": 20, "loc": 14, "wa": 6}, {"name": "Veterinarias Asociadas", "vis": 807, "cb": 19, "loc": 13, "wa": 6}, {"name": "Distribuidora Nehuel", "vis": 762, "cb": 19, "loc": 15, "wa": 4}, {"name": "Maximascotas", "vis": 557, "cb": 18, "loc": 9, "wa": 9}, {"name": "Distropets", "vis": 768, "cb": 16, "loc": 10, "wa": 6}, {"name": "Gerar Balanceados", "vis": 965, "cb": 12, "loc": 6, "wa": 6}, {"name": "Lab. Nutrición Profesional", "vis": 650, "cb": 12, "loc": 10, "wa": 2}, {"name": "Mr Dog Villa María", "vis": 914, "cb": 8, "loc": 5, "wa": 3}, {"name": "El Refugio Forrajería", "vis": 928, "cb": 6, "loc": 5, "wa": 1}, {"name": "El Choique", "vis": 401, "cb": 4, "loc": 2, "wa": 2}, {"name": "Vet. Talabartería San Martín", "vis": 399, "cb": 4, "loc": 3, "wa": 1}, {"name": "Tienda Mascotas El Bagual", "vis": 575, "cb": 4, "loc": 1, "wa": 3}, {"name": "Distribuidora Don Antonio", "vis": 0, "cb": 0, "loc": 0, "wa": 0}, {"name": "Famec, El Surco", "vis": 56, "cb": 0, "loc": 0, "wa": 0}];
+const DEMO={"genderAge": [["U.13-17", 1], ["F.18-24", 19], ["M.18-24", 14], ["U.18-24", 12], ["F.25-34", 117], ["M.25-34", 115], ["U.25-34", 52], ["F.35-44", 201], ["M.35-44", 137], ["U.35-44", 65], ["F.45-54", 162], ["M.45-54", 107], ["U.45-54", 67], ["F.55-64", 93], ["M.55-64", 45], ["U.55-64", 22], ["F.65+", 104], ["M.65+", 26], ["U.65+", 35]], "cities": [["Buenos Aires (CABA)", 123], ["Rosario", 62], ["San Nicolás de los Arroyos", 42], ["Córdoba", 38], ["Ezeiza", 28], ["Mar del Plata", 19], ["Monte Grande", 19], ["Ingeniero Budge", 18], ["González Catán", 18], ["Villa María", 16]], "totalFollowers": 1394, "arPct": 99};
+const FOL={ig:{"2026-05-15": 4, "2026-05-16": 10, "2026-05-17": 4, "2026-05-18": 5, "2026-05-19": 3, "2026-05-20": 0, "2026-05-21": 4, "2026-05-22": 10, "2026-05-23": 11, "2026-05-24": 11, "2026-05-25": 6, "2026-05-26": 2, "2026-05-27": 2, "2026-05-28": 3, "2026-05-29": 2, "2026-05-30": 4, "2026-05-31": 5, "2026-06-01": 6, "2026-06-02": 1, "2026-06-03": 0, "2026-06-04": 0, "2026-06-05": 0, "2026-06-06": 0, "2026-06-07": 0, "2026-06-08": 1, "2026-06-09": 0, "2026-06-10": 1, "2026-06-11": 3, "2026-06-12": 3, "2026-06-13": 0},ig_from:"2026-05-15",ig_total:1373};
+
+ADS_RAW.forEach((a,i)=>{a.inc=true;a.i=i;if(!a.grupo||a.grupo==='Resto'){a.grupo=['PdV','PDV','Puntos de Venta','Punto'].some(k=>a.name.includes(k))?'PDV':'Marca';}});
+
+const ACC="#3aa66b",ACC2="#2f8fd6",ACC3="#e0a93b";
+const OBJCOL={Tráfico:ACC,Interacción:ACC3,Alcance:ACC2};
+const baseOpts={responsive:true,animation:false,plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxTicksLimit:14}}}};
+const fmt=n=>{n=Math.round(n);return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":n.toLocaleString('es-AR');};
+const fmtP=n=>n>=0?"▲ +"+Math.abs(n).toFixed(1)+"%":"▼ "+Math.abs(n).toFixed(1)+"%";
+const pctCh=(c,p)=>p?((c-p)/p*100):null;
+let charts={}, adFilter='all';
+
+// ── MONTH SELECTOR ────────────────────────────────────────────────────────────
+const allYMs=HIST_MONTHS.map(h=>h.ym);
+function buildMonthSelects(){
+  ['mesFrom','mesTo','mesCompFrom','mesCompTo'].forEach(id=>{
+    const sel=document.getElementById(id);sel.innerHTML='';
+    HIST_MONTHS.forEach(h=>{const o=document.createElement('option');o.value=h.ym;o.textContent=h.m;sel.appendChild(o);});
+  });
+  document.getElementById('mesFrom').value=allYMs[allYMs.length-1];
+  document.getElementById('mesTo').value=allYMs[allYMs.length-1];
+  document.getElementById('mesCompFrom').value=allYMs[0];
+  document.getElementById('mesCompTo').value=allYMs[allYMs.length-2]||allYMs[0];
+}
+function getMonths(){
+  const mode=document.getElementById('monthMode').value;
+  if(mode==='full')return HIST_MONTHS;
+  if(mode==='ytd')return HIST_MONTHS.filter(h=>h.ym.startsWith('2026'));
+  const f=document.getElementById('mesFrom').value;
+  if(mode==='single')return HIST_MONTHS.filter(h=>h.ym===f);
+  const t=document.getElementById('mesTo').value;
+  const fi=allYMs.indexOf(f),ti=allYMs.indexOf(t);
+  return HIST_MONTHS.slice(Math.min(fi,ti),Math.max(fi,ti)+1);
+}
+function getPrevMonths(months){
+  const cmp=document.getElementById('compare').value;
+  if(cmp==='none')return null;
+  if(cmp==='custom'){
+    const cf=document.getElementById('mesCompFrom').value;
+    const ct=document.getElementById('mesCompTo').value;
+    const i0=allYMs.indexOf(cf),i1=allYMs.indexOf(ct);
+    return HIST_MONTHS.slice(Math.min(i0,i1),Math.max(i0,i1)+1);
+  }
+  const fi=allYMs.indexOf(months[0].ym);
+  const span=months.length;
+  if(fi<span)return null;
+  return HIST_MONTHS.slice(fi-span,fi);
+}
+function updateMonthUI(){
+  const mode=document.getElementById('monthMode').value;
+  const net=document.getElementById('network').value;
+  const isHist=net==='historico'||net==='ig_only';
+  document.getElementById('ctlMode').classList.toggle('hidden',!isHist);
+  document.getElementById('ctlFrom').classList.toggle('hidden',!isHist||mode==='full'||mode==='ytd');
+  document.getElementById('ctlTo').classList.toggle('hidden',!isHist||mode!=='range');
+  document.getElementById('ctlComp').classList.toggle('hidden',!isHist);
+  const cmp=document.getElementById('compare').value;
+  document.getElementById('ctlCompFrom').classList.toggle('hidden',!isHist||cmp!=='custom');
+  document.getElementById('ctlCompTo').classList.toggle('hidden',!isHist||cmp!=='custom');
+}
+
+// ── KPI helpers ───────────────────────────────────────────────────────────────
+function kpiCard(label,val,chg,compOn,cl){
+  const ch=compOn&&chg!==null?`<div class="chg ${chg>=0?'pos':'neg'}">${fmtP(chg)} vs anterior</div>`:'<div class="chg flat"></div>';
+  return `<div class="kpi ${cl}"><div class="label">${label}</div><div class="value">${val}</div>${ch}</div>`;
+}
+
+// ── RENDER HISTÓRICO ──────────────────────────────────────────────────────────
+function renderHistorico(igOnly=false){
+  const months=getMonths();
+  const prev=getPrevMonths(months);
+  const compOn=!!prev;
+  renderDemo();
+  renderHistComment(igOnly);
+  const last=months[months.length-1];
+  const single=months.length===1;
+
+  // Aggregate
+  const agg=ms=>({
+    seg:ms.reduce((s,h)=>s+h.seg,0),
+    int:ms.reduce((s,h)=>s+(igOnly?h.intOrg:h.int),0),
+    intOrg:ms.reduce((s,h)=>s+h.intOrg,0),
+    reach:ms.reduce((s,h)=>s+h.reach,0),
+    views:ms.reduce((s,h)=>s+h.views,0),
+    inv:ms.reduce((s,h)=>s+h.inv,0),
+    tot:ms[ms.length-1].tot,
+  });
+  const cur=agg(months), pv=prev?agg(prev):null;
+
+  // Range label
+  const modeLabel=single?last.m:`${months[0].m} → ${last.m}`;
+  document.getElementById('rangeLabel').textContent=`${modeLabel} · ${months.length} mes${months.length>1?'es':''}`;
+
+  // KPIs
+  const k=document.getElementById('kpis');k.innerHTML='';
+  k.insertAdjacentHTML('beforeend',kpiCard('Seguidores nuevos IG','+'+cur.seg.toLocaleString('es-AR'),compOn&&pv?pctCh(cur.seg,pv.seg):null,compOn,'b'));
+  k.insertAdjacentHTML('beforeend',kpiCard('Total seguidores IG',cur.tot.toLocaleString('es-AR'),null,false,''));
+  k.insertAdjacentHTML('beforeend',kpiCard('Interacciones totales',fmt(cur.int),compOn&&pv?pctCh(cur.int,pv.int):null,compOn,'c'));
+  k.insertAdjacentHTML('beforeend',kpiCard('Int. orgánicas',fmt(cur.intOrg),compOn&&pv?pctCh(cur.intOrg,pv.intOrg):null,compOn,''));
+  k.insertAdjacentHTML('beforeend',kpiCard('Alcance',fmt(cur.reach),compOn&&pv?pctCh(cur.reach,pv.reach):null,compOn,'b'));
+  k.insertAdjacentHTML('beforeend',kpiCard('Inversión pauta','$'+fmt(cur.inv),compOn&&pv?pctCh(cur.inv,pv.inv):null,compOn,'c'));
+
+  // Followers chart — monthly bars
+  if(charts.cfol)charts.cfol.destroy();
+  const cfolDs=[{label:'Seguidores nuevos',data:months.map(h=>h.seg),_meses:months.map(h=>h.m),
+    backgroundColor:months.map(h=>h.nota?ACC3:h.ym.startsWith('2026')?ACC:ACC2),borderRadius:4}];
+  if(compOn&&prev)cfolDs.push({label:'Comp.',data:prev.map(h=>h.seg),_meses:prev.map(h=>h.m),
+    backgroundColor:'#E24B4A55',borderColor:'#E24B4A88',borderWidth:1,borderRadius:4});
+  charts.cfol=new Chart(document.getElementById('cfol'),{type:'bar',data:{
+    labels:months.map(h=>h.m),datasets:cfolDs},
+    options:{...baseOpts,plugins:{legend:{display:false},tooltip:{callbacks:{
+      title:(items)=>{const it=items[0];const ds=it.dataset;return (ds._meses&&ds._meses[it.dataIndex])||it.label;},
+      label:(item)=>{const ds=item.dataset;return (ds.label||'')+': '+item.formattedValue;}
+    }}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+  const maxSeg=Math.max(...months.map(h=>h.seg));
+  const peakM=months.filter(h=>h.seg===maxSeg).map(h=>h.m).join(', ');
+  const totSeg=months.reduce((s,h)=>s+h.seg,0);
+  document.getElementById('folPeak').innerHTML=maxSeg>0?`· pico: <b style="color:var(--accent3)">${peakM}</b> (+${maxSeg}) · total: <b>+${totSeg}</b>`:'';
+
+  // Gráfico c1: interacciones por mes
+  if(charts.c1)charts.c1.destroy();
+  const chart1Title=document.getElementById('chart1Title');
+  if(chart1Title)chart1Title.textContent=igOnly?'Interacciones orgánicas':'Métricas del periodo';
+  const c1ds=[
+    {label:'Int. totales',data:months.map(h=>igOnly?h.intOrg:h.int),_meses:months.map(h=>h.m),backgroundColor:ACC+'88',yAxisID:'y'},
+    {label:'Int. orgánicas',data:months.map(h=>h.intOrg),_meses:months.map(h=>h.m),backgroundColor:ACC,yAxisID:'y'}];
+  if(compOn&&prev){
+    c1ds.push({type:'line',label:'Comp. totales',data:prev.map(h=>igOnly?h.intOrg:h.int),_meses:prev.map(h=>h.m),
+      borderColor:'#E24B4A',borderDash:[5,4],borderWidth:2,pointRadius:3,pointBackgroundColor:'#E24B4A',tension:.3,fill:false,yAxisID:'y'});
+    c1ds.push({type:'line',label:'Comp. orgánicas',data:prev.map(h=>h.intOrg),_meses:prev.map(h=>h.m),
+      borderColor:'#7A4FBE',borderDash:[5,4],borderWidth:2,pointRadius:3,pointBackgroundColor:'#7A4FBE',tension:.3,fill:false,yAxisID:'y'});
+  }
+  charts.c1=new Chart(document.getElementById('c1'),{type:'bar',data:{labels:months.map(h=>h.m),datasets:c1ds},
+    options:{...baseOpts,plugins:{tooltip:{callbacks:{
+      title:(items)=>{const it=items[0];const ds=it.dataset;return (ds._meses&&ds._meses[it.dataIndex])||it.label;},
+      label:(item)=>{return (item.dataset.label||'')+': '+item.formattedValue;}
+    }}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+
+  // Gráfico c2: inversión vs seguidores nuevos
+  if(charts.c2)charts.c2.destroy();
+  const c2ds=[
+    {label:'Inversión ($)',data:months.map(h=>h.inv),borderColor:ACC3,backgroundColor:ACC3+'22',fill:true,tension:.3,borderWidth:2.5,pointRadius:3,yAxisID:'y1'},
+    {label:'Seg. nuevos',data:months.map(h=>h.seg),borderColor:ACC2,tension:.3,borderWidth:2.5,pointRadius:3,yAxisID:'y2'}];
+  if(compOn&&prev){
+    c2ds.push({label:'Inv. comp.',data:prev.map(h=>h.inv),borderColor:ACC3+'66',borderDash:[5,4],tension:.3,borderWidth:1.5,pointRadius:2,fill:false,yAxisID:'y1'});
+    c2ds.push({label:'Seg. comp.',data:prev.map(h=>h.seg),borderColor:ACC2+'66',borderDash:[5,4],tension:.3,borderWidth:1.5,pointRadius:2,fill:false,yAxisID:'y2'});
+  }
+  charts.c2=new Chart(document.getElementById('c2'),{type:'line',data:{labels:months.map(h=>h.m),datasets:c2ds},
+    options:{...baseOpts,scales:{
+      y1:{type:'linear',position:'left',ticks:{font:{size:9},callback:v=>'$'+Math.round(v/1000)+'K'}},
+      y2:{type:'linear',position:'right',ticks:{font:{size:9}},grid:{drawOnChartArea:false}},
+      x:{ticks:{font:{size:10},maxRotation:45}}}}});
+
+  // TOP 3 — ordenado por int_suma (orgánico + pauta)
+  const medals=['🥇','🥈','🥉'];
+  function renderTop3(monthsList, container, isComp){
+    container.innerHTML='';
+    const allPosts=[];
+    monthsList.forEach(h=>{(h.top3||[]).forEach(p=>allPosts.push({...p,_mes:h.m}));});
+    allPosts.sort((a,b)=>(b.int_suma||b.int||0)-(a.int_suma||a.int||0));
+    const top=allPosts.slice(0,3);
+    if(!top.length){container.innerHTML='<div style="color:var(--muted);font-size:14px;padding:12px">No hay publicaciones para este periodo.</div>';return;}
+    top.forEach((p,i)=>{
+      const intSuma=p.int_suma||p.int||0;
+      const intOrg=p.int||0;
+      const intPauta=p.int_pauta||0;
+      const hasDetail=p.likes||p.comments||p.shares||p.saved;
+      const detailHtml=hasDetail?
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-top:5px;padding-top:5px;border-top:1px solid var(--line)">'
+        +'<div style="font-size:10px;color:var(--muted)">❤️ <b style="color:var(--ink)">'+(p.likes||0).toLocaleString('es-AR')+'</b> me gusta</div>'
+        +'<div style="font-size:10px;color:var(--muted)">💬 <b style="color:var(--ink)">'+(p.comments||0).toLocaleString('es-AR')+'</b> comentarios</div>'
+        +'<div style="font-size:10px;color:var(--muted)">↗️ <b style="color:var(--ink)">'+(p.shares||0).toLocaleString('es-AR')+'</b> compartidos</div>'
+        +'<div style="font-size:10px;color:var(--muted)">🔖 <b style="color:var(--ink)">'+(p.saved||0).toLocaleString('es-AR')+'</b> guardados</div>'
+        +'</div>':'';
+      const breakdownHtml=intPauta>0?
+        '<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">'
+        +'<span style="font-size:10px;background:#EAF7F2;color:#0F6E56;padding:1px 6px;border-radius:4px">'+intOrg.toLocaleString('es-AR')+' orgánicas</span>'
+        +'<span style="font-size:10px;background:#EDF2FF;color:#3B5BDB;padding:1px 6px;border-radius:4px">'+intPauta.toLocaleString('es-AR')+' pauta</span>'
+        +'</div>':'';
+      const borderColor=isComp?'#d2553f':['#e0a93b','#9aa7a0','#b9824a'][i];
+      const mesSpan=monthsList.length>1?'<span style="font-size:10px;color:var(--muted);margin-left:auto">'+p._mes+'</span>':'';
+      container.insertAdjacentHTML('beforeend',
+        '<div class="podium p'+(i+1)+'" style="border-left-color:'+borderColor+'">'
+        +'<div class="podium-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:5px">'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<span class="medal">'+medals[i]+'</span>'
+        +'<span class="ttag">'+(p.tipo||'Imagen')+'</span>'
+        +'<span style="font-size:10px;color:var(--muted)">'+(p.fecha||'')+'</span>'
+        +mesSpan
+        +'</div>'
+        +'<div class="ctext" style="font-size:12px;font-weight:500;line-height:1.35">'+(p.desc||'—')+'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--accent)">'+fmt(intSuma)+' interacciones</div>'
+        +breakdownHtml+detailHtml
+        +'<div style="margin-top:4px"><a href="'+(p.link||'')+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:3px">🔗 Ver en Instagram</a></div>'
+        +'</div></div>');
+    });
+  }
+  const t3=document.getElementById('top3');
+  renderTop3(months, t3, false);
+  const t3compLabel=document.getElementById('top3compLabel');
+  const t3comp=document.getElementById('top3comp');
+  if(t3comp){
+    t3comp.innerHTML='';
+    if(compOn&&prev&&prev.length){
+      t3compLabel.style.display='block';
+      t3compLabel.textContent='📊 Comparativo · '+prev.map(function(h){return h.m;}).join(' – ');
+      renderTop3(prev, t3comp, true);
+    } else {
+      if(t3compLabel)t3compLabel.style.display='none';
+    }
+  }
+  // Tabla mensual
+  const tb=document.getElementById('histTblBody');tb.innerHTML='';
+  months.forEach(h=>{
+    const yr26=h.ym.startsWith('2026');
+    tb.insertAdjacentHTML('beforeend',`<tr style="background:${yr26?'#f0f7f2':''}">
+      <td style="font-weight:700">${h.m}</td>
+      <td>${h.seg>0?'+'+h.seg:h.seg}</td>
+      <td>${h.tot.toLocaleString('es-AR')}</td>
+      <td>${h.int.toLocaleString('es-AR')}</td>
+      <td>${h.intOrg.toLocaleString('es-AR')}</td>
+      <td>${h.reach.toLocaleString('es-AR')}</td>
+      <td>$${Math.round(h.inv).toLocaleString('es-AR')}</td>
+      <td>${h.cpr?'$'+h.cpr.toFixed(2):'—'}</td>
+      <td style="font-size:12px;color:${h.nota?'#b08900':'var(--muted)'}">${h.nota||'—'}</td>
+    </tr>`);
+  });
+}
+
+// ── LECTURA DEL MES — HIST / IG ──────────────────────────────────────────────
+function renderHistComment(igOnly){
+  const card=document.getElementById('histCommentCard');
+  const titleEl=document.getElementById('histCommentTitle');
+  const textEl=document.getElementById('histCommentText');
+  if(!card||!titleEl||!textEl)return;
+
+  const months=getMonths();
+  if(months.length!==1){card.style.display='none';return;}
+
+  const h=months[0];
+  const mNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const parts=h.ym.split('-');
+  const mesLabel=mNames[parseInt(parts[1])-1]+' '+parts[0];
+
+  // Datos base
+  const segNuevos=h.seg;
+  const totSeg=h.tot;
+  const intTotal=igOnly?h.intOrg:h.int;
+  const intOrg=h.intOrg;
+  const inv=h.inv;
+  const cpr=h.cpr;
+  const nota=h.nota||'';
+
+  // Mejor post del mes
+  const top3=h.top3||[];
+  const bestPost=top3.length?top3[0]:null;
+
+  // Construir texto
+  let lines=[];
+
+  // Seguidores
+  if(segNuevos>0){
+    lines.push('<b>+'+segNuevos.toLocaleString('es-AR')+'</b> seguidores nuevos en '+mesLabel+' (total: <b>'+totSeg.toLocaleString('es-AR')+'</b>).');
+  } else if(segNuevos<0){
+    lines.push('<b>'+segNuevos+' seguidores</b> netos en '+mesLabel+' (pérdida neta, total: '+totSeg.toLocaleString('es-AR')+').');
+  } else {
+    lines.push('Sin variación de seguidores en '+mesLabel+' (total: '+totSeg.toLocaleString('es-AR')+').');
+  }
+
+  // Interacciones
+  if(igOnly){
+    lines.push('Interacciones orgánicas: <b>'+intOrg.toLocaleString('es-AR')+'</b>.');
+  } else {
+    lines.push('Interacciones totales: <b>'+intTotal.toLocaleString('es-AR')+'</b> ('+intOrg.toLocaleString('es-AR')+' orgánicas).');
+  }
+
+  // Inversión y CPR
+  if(inv>0){
+    lines.push('Inversión en pauta: <b>$'+Math.round(inv).toLocaleString('es-AR')+'</b>'+(cpr?' con CPR <b>$'+Number(cpr).toFixed(2)+'</b>':'')+'.');
+  }
+
+  // Mejor publicación
+  if(bestPost){
+    const intSuma=bestPost.int_suma||bestPost.int||0;
+    const tipo=bestPost.tipo||'Imagen';
+    const fecha=bestPost.fecha||'';
+    const link=bestPost.link||'';
+    const linkHtml=link?` — <a href="${link}" target="_blank" style="color:var(--accent);font-size:13px">Ver post</a>`:'';
+    lines.push('Publicación destacada: <b>'+tipo+'</b> del '+fecha+' con <b>'+fmt(intSuma)+' interacciones</b>'+linkHtml+'.');
+  }
+
+  // Nota especial
+  if(nota&&nota.trim()&&nota!=='—'){
+    lines.push('<span style="color:var(--accent3)">'+nota+'</span>');
+  }
+
+  titleEl.textContent=(igOnly?'📷 Instagram — ':'📊 IG + FB — ')+'Lectura de '+mesLabel;
+  textEl.innerHTML=lines.join(' ');
+  card.style.display='block';
+}
+
+// ── AUDIENCIA ─────────────────────────────────────────────────────────────────
+function renderDemo(){
+  if(!DEMO)return;
+  // Género: sumar F, M, U a partir de genderAge
+  const gen={F:0,M:0,U:0};
+  (DEMO.genderAge||[]).forEach(([k,v])=>{const g=k.split('.')[0];if(gen[g]!==undefined)gen[g]+=v;});
+  if(charts.cGen)charts.cGen.destroy();
+  charts.cGen=new Chart(document.getElementById('cGen'),{
+    type:'doughnut',
+    data:{labels:['Mujeres','Hombres','No especificado'],datasets:[{data:[gen.F,gen.M,gen.U],backgroundColor:[ACC,'#2f8fd6','#9aa7a0']}]},
+    options:{...baseOpts,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}
+  });
+
+  // Edad: agrupar por rango
+  const ageMap={};
+  (DEMO.genderAge||[]).forEach(([k,v])=>{
+    const age=k.split('.')[1];
+    ageMap[age]=(ageMap[age]||0)+v;
+  });
+  const ageLabels=Object.keys(ageMap).sort();
+  const ageVals=ageLabels.map(a=>ageMap[a]);
+  if(charts.cAge)charts.cAge.destroy();
+  charts.cAge=new Chart(document.getElementById('cAge'),{
+    type:'bar',
+    data:{labels:ageLabels,datasets:[{label:'Seguidores',data:ageVals,backgroundColor:ACC,borderRadius:4}]},
+    options:{...baseOpts,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // Ciudades: top 10
+  const cities=(DEMO.cities||[]).slice(0,10);
+  if(charts.cCity)charts.cCity.destroy();
+  charts.cCity=new Chart(document.getElementById('cCity'),{
+    type:'bar',
+    data:{
+      labels:cities.map(([c])=>c.length>20?c.slice(0,18)+'…':c),
+      datasets:[{label:'Seguidores',data:cities.map(([,v])=>v),backgroundColor:ACC2,borderRadius:4}]
+    },
+    options:{...baseOpts,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}
+  });
+  const geo=document.getElementById('audGeo');
+  if(geo)geo.textContent='· '+DEMO.arPct+'% Argentina · '+DEMO.totalFollowers.toLocaleString('es-AR')+' seguidores';
+}
+
+// ── ADS ───────────────────────────────────────────────────────────────────────
+function shortName(n){return n.replace(/^Tráfico - Puntos de Venta - /,'PDV: ').replace(/^Tráfico al perfil - /,'Perfil: ').replace(/^Interacción - /,'Int: ').replace(/^Alcance - Puntos de Venta - /,'Alc: ').replace(/^\[MTR IG POST\]/,'MTR: ');}
+
+// ── MONTH PILLS META ADS ──────────────────────────────────────────────────────
+const AD_MONTHS=[...new Set(ADS_RAW.map(a=>a.mes))].sort();
+let adMonthFilter=null;
+
+function toggleAdMonth(ym){
+  if(!adMonthFilter){adMonthFilter=new Set(AD_MONTHS);}
+  if(adMonthFilter.has(ym))adMonthFilter.delete(ym);
+  else adMonthFilter.add(ym);
+  buildAdMonthPills();
+  renderAds();
+}
+function setAdMonths(preset){
+  if(preset==='all'){adMonthFilter=null;}
+  else if(preset==='2026'){adMonthFilter=new Set(AD_MONTHS.filter(m=>m.startsWith('2026')));}
+  else if(preset==='2025'){adMonthFilter=new Set(AD_MONTHS.filter(m=>m.startsWith('2025')));}
+  else if(preset==='last3'){const last3=AD_MONTHS.slice(-3);adMonthFilter=new Set(last3);}
+  buildAdMonthPills();renderAds();
+}
+function adsMonthFiltered(){
+  if(!adMonthFilter)return ADS_RAW;
+  return ADS_RAW.filter(a=>adMonthFilter.has(a.mes));
+}
+function updateAdMonthLabel(){
+  const months=adMonthFilter?Array.from(adMonthFilter).sort():AD_MONTHS.slice();
+  const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const fmt=ym=>{const p=ym.split('-');return mNames[parseInt(p[1])-1]+' '+p[0].slice(2);};
+  const el=document.getElementById('adMonthLabel');
+  if(!el)return;
+  if(!adMonthFilter||adMonthFilter.size===AD_MONTHS.length)el.textContent='Mostrando todo el histórico · '+AD_MONTHS.length+' meses';
+  else el.textContent='Mostrando: '+months.map(fmt).join(', ')+' · '+months.length+' mes'+(months.length>1?'es':'');
+}
+function buildAdMonthPills(){
+  const box=document.getElementById('adMonthPillsBox');if(!box)return;
+  box.innerHTML='';
+  const accEl=document.getElementById('adMonthAccesos');
+  if(accEl){
+    const btns=[['all','Todo el histórico'],['2026','Solo 2026'],['2025','Solo 2025'],['last3','Últimos 3 meses']];
+    accEl.innerHTML=btns.map(function(b){return '<button class="fpill" style="font-size:10px;padding:2px 8px" onclick="setAdMonths(\'' +b[0]+ '\')">' +b[1]+ '</button>';}).join('');
+  }
+  const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  AD_MONTHS.forEach(ym=>{
+    const p=ym.split('-');
+    const label=mNames[parseInt(p[1])-1]+' '+p[0].slice(2);
+    const active=!adMonthFilter||adMonthFilter.has(ym);
+    const pill=document.createElement('button');
+    pill.className='fpill'+(active?' active':'');
+    pill.dataset.ym=ym;
+    pill.textContent=label;
+    pill.onclick=function(){toggleAdMonth(ym);};
+    box.appendChild(pill);
+  });
+  updateAdMonthLabel();
+  buildAdCompareSelects();
+}
+function buildAdCompareSelects(){
+  const fromSel=document.getElementById('adMesCompFrom');
+  const toSel=document.getElementById('adMesCompTo');
+  if(!fromSel||!toSel)return;
+  const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  fromSel.innerHTML='';toSel.innerHTML='';
+  AD_MONTHS.forEach(function(ym){
+    const parts=ym.split('-');
+    const label=mNames[parseInt(parts[1])-1]+' '+parts[0].slice(2);
+    const o1=document.createElement('option');o1.value=ym;o1.textContent=label;
+    const o2=document.createElement('option');o2.value=ym;o2.textContent=label;
+    fromSel.appendChild(o1);toSel.appendChild(o2);
+  });
+  if(AD_MONTHS.length){
+    fromSel.value=AD_MONTHS[0];
+    toSel.value=AD_MONTHS[AD_MONTHS.length-2]||AD_MONTHS[0];
+  }
+}
+function updateAdCompareUI(){
+  const cmp=document.getElementById('adCompare');if(!cmp)return;
+  const val=cmp.value;
+  const fromCtl=document.getElementById('adCtlCompFrom');
+  const toCtl=document.getElementById('adCtlCompTo');
+  if(fromCtl)fromCtl.classList.toggle('hidden',val!=='custom');
+  if(toCtl)toCtl.classList.toggle('hidden',val!=='custom');
+}
+function adsFilterByType(arr){
+  if(adFilter==='all')return arr;
+  if(adFilter==='PDV'||adFilter==='Marca')return arr.filter(function(a){return a.grupo===adFilter;});
+  return arr.filter(function(a){return a.obj===adFilter;});
+}
+function getAdsCompareSet(){
+  const cmp=document.getElementById('adCompare');
+  if(!cmp||cmp.value==='none')return null;
+  const currentMonths=adMonthFilter?Array.from(adMonthFilter).sort():AD_MONTHS.slice();
+  if(cmp.value==='custom'){
+    const cf=document.getElementById('adMesCompFrom').value;
+    const ct=document.getElementById('adMesCompTo').value;
+    const i0=AD_MONTHS.indexOf(cf),i1=AD_MONTHS.indexOf(ct);
+    if(i0<0||i1<0)return null;
+    const compMonths=AD_MONTHS.slice(Math.min(i0,i1),Math.max(i0,i1)+1);
+    const compSet=new Set(compMonths);
+    return adsFilterByType(ADS_RAW.filter(function(a){return compSet.has(a.mes);}));
+  }
+  const span=currentMonths.length;
+  const firstIdx=AD_MONTHS.indexOf(currentMonths[0]);
+  if(firstIdx<span)return null;
+  const prevMonths=AD_MONTHS.slice(firstIdx-span,firstIdx);
+  const prevSet=new Set(prevMonths);
+  return adsFilterByType(ADS_RAW.filter(function(a){return prevSet.has(a.mes);}));
+}
+function pctChange(curr,prev){if(!prev)return null;return((curr-prev)/prev)*100;}
+function arrowSpan(chg){
+  if(chg===null)return'';
+  const cls=chg>=0?'pos':'neg';const arrow=chg>=0?'▲':'▼';
+  return'<span class="chg '+cls+'">'+arrow+' '+Math.abs(chg).toFixed(0)+'% vs ant.</span>';
+}
+function renderAdsComment(){
+  const card=document.getElementById('adsCommentCard');
+  const titleEl=document.getElementById('adsCommentTitle');
+  const textEl=document.getElementById('adsCommentText');
+  if(!card||!titleEl||!textEl)return;
+  const months=adMonthFilter?Array.from(adMonthFilter).sort():AD_MONTHS.slice();
+  if(months.length!==1){card.style.display='none';return;}
+  const mes=months[0];
+  const camps=adsFilterByType(ADS_RAW.filter(function(a){return a.mes===mes;}));
+  if(!camps.length){card.style.display='none';return;}
+  const mNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const parts=mes.split('-');
+  const mesLabel=mNames[parseInt(parts[1])-1]+' '+parts[0];
+  const inv=camps.reduce(function(s,a){return s+a.spend;},0);
+  const res=camps.reduce(function(s,a){return s+a.res;},0);
+  const cpr=res?inv/res:0;
+  const byObj={};
+  camps.forEach(function(a){byObj[a.obj]=(byObj[a.obj]||0)+a.spend;});
+  const topObj=Object.keys(byObj).sort(function(a,b){return byObj[b]-byObj[a];})[0];
+  const pdvCamps=camps.filter(function(a){return a.grupo==='PDV';});
+  const best=camps.slice().sort(function(a,b){return b.res-a.res;})[0];
+  const bestName=shortName(best.name);
+  let pdvText='';
+  if(pdvCamps.length){
+    const pdvInv=pdvCamps.reduce(function(s,a){return s+a.spend;},0);
+    pdvText=' Las campañas de <b>Puntos de Venta</b> sumaron '+pdvCamps.length+' activas con $'+Math.round(pdvInv).toLocaleString('es-AR')+' invertidos.';
+  }
+  const text='En '+mesLabel+' se invirtieron <b>$'+Math.round(inv).toLocaleString('es-AR')+'</b> en '+camps.length+' campañas, generando <b>'+res.toLocaleString('es-AR')+' resultados</b> a un CPR de <b>$'+cpr.toFixed(2)+'</b>. '
+    +'El objetivo <b>'+topObj+'</b> concentró la mayor parte de la inversión.'
+    +pdvText
+    +' La campaña más eficiente fue <b>'+bestName+'</b>, con '+best.res.toLocaleString('es-AR')+' resultados.';
+  titleEl.textContent='Lectura del mes — '+mesLabel;
+  textEl.innerHTML=text;
+  card.style.display='block';
+}
+
+function adsWS(){
+  const base=adsMonthFiltered();
+  if(adFilter==='all')return base;
+  if(adFilter==='PDV'||adFilter==='Marca')return base.filter(a=>a.grupo===adFilter);
+  return base.filter(a=>a.obj===adFilter);
+}
+function renderAds(){
+  renderAdsComment();
+  const ws=adsWS();
+  const tb=document.querySelector('#adTbl tbody');tb.innerHTML='';
+  ws.forEach(a=>{tb.insertAdjacentHTML('beforeend',
+    `<tr class="${a.inc?'':'excluded'}">
+      <td title="${a.name.replace(/"/g,'&quot;')}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortName(a.name)}</td>
+      <td><span class="tag" style="background:${OBJCOL[a.obj]||'#888'}">${a.obj}</span></td>
+      <td style="color:${a.status==='Activa'?ACC:'#b08900'}">${a.status}</td>
+      <td>$${a.spend.toLocaleString('es-AR')}</td>
+      <td>${a.impr.toLocaleString('es-AR')}</td>
+      <td>${a.reach.toLocaleString('es-AR')}</td>
+      <td>${a.clicks.toLocaleString('es-AR')}</td>
+      <td>${a.res.toLocaleString('es-AR')}</td>
+      <td style="text-align:center"><input type="checkbox" class="chk" ${a.inc?'checked':''} onchange="ADS_RAW[${a.i}].inc=this.checked;renderAds()"></td></tr>`);});
+  document.getElementById('adCount').textContent=`${ws.filter(a=>a.inc).length} de ${ws.length} incluidas`;
+  recalcAds();
+}
+function recalcAds(){
+  const inc=adsWS().filter(a=>a.inc);
+  const t=k=>inc.reduce((s,a)=>s+(a[k]||0),0);
+  const spend=t('spend'),impr=t('impr'),reach=t('reach'),clicks=t('clicks');
+  document.getElementById('tSpend').textContent='$'+spend.toLocaleString('es-AR');
+  document.getElementById('tImpr').textContent=impr.toLocaleString('es-AR');
+  document.getElementById('tReach').textContent=reach.toLocaleString('es-AR');
+  document.getElementById('tClicks').textContent=clicks.toLocaleString('es-AR');
+  const ctr=impr?(clicks/impr*100):0,cpm=impr?(spend/impr*1000):0,cpc=clicks?spend/clicks:0;
+  const compArr=getAdsCompareSet();
+  const compInc=compArr?compArr.filter(a=>a.inc!==false):null;
+  const ct=k=>compInc?compInc.reduce((s,a)=>s+(a[k]||0),0):null;
+  const cSpend=ct('spend'),cImpr=ct('impr'),cReach=ct('reach'),cClicks=ct('clicks');
+  const cCtr=compInc?(cImpr?(ct('clicks')/cImpr*100):0):null;
+  const cCpm=compInc?(cImpr?(cSpend/cImpr*1000):0):null;
+  const cCpc=compInc?(ct('clicks')?cSpend/ct('clicks'):0):null;
+  const ak=document.getElementById('adsKpis');ak.innerHTML='';
+  const akpi=(l,v,cl,chg)=>`<div class="kpi ${cl}"><div class="label">${l}</div><div class="value">${v}</div>${chg!==undefined?arrowSpan(chg):''}</div>`;
+  ak.insertAdjacentHTML('beforeend',akpi('Inversión total','$'+fmt(spend),'c',compInc?pctChange(spend,cSpend):undefined));
+  ak.insertAdjacentHTML('beforeend',akpi('Impresiones',fmt(impr),'',compInc?pctChange(impr,cImpr):undefined));
+  ak.insertAdjacentHTML('beforeend',akpi('Alcance',fmt(reach),'b',compInc?pctChange(reach,cReach):undefined));
+  ak.insertAdjacentHTML('beforeend',akpi('Clics',fmt(clicks),'',compInc?pctChange(clicks,cClicks):undefined));
+  ak.insertAdjacentHTML('beforeend',akpi('CTR',ctr.toFixed(2)+'%','c',compInc?pctChange(ctr,cCtr):undefined));
+  ak.insertAdjacentHTML('beforeend',akpi('CPM','$'+cpm.toFixed(0),'b',compInc?pctChange(cpm,cCpm):undefined));
+  ak.insertAdjacentHTML('beforeend',akpi('CPC','$'+cpc.toFixed(0),''));
+  const byObj={};inc.forEach(a=>byObj[a.obj]=(byObj[a.obj]||0)+a.spend);
+  const objs=Object.keys(byObj);
+  if(charts.cAdsObj)charts.cAdsObj.destroy();
+  charts.cAdsObj=new Chart(document.getElementById('cAdsObj'),{type:'doughnut',data:{labels:objs,datasets:[{data:objs.map(o=>byObj[o]),backgroundColor:objs.map(o=>OBJCOL[o]||'#888')}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+  const top=inc.slice().sort((a,b)=>b.spend-a.spend).slice(0,8);
+  if(charts.cAdsTop)charts.cAdsTop.destroy();
+  charts.cAdsTop=new Chart(document.getElementById('cAdsTop'),{type:'bar',data:{labels:top.map(a=>shortName(a.name)),datasets:[{data:top.map(a=>a.spend),backgroundColor:top.map(a=>OBJCOL[a.obj]||'#888')}]},options:{...baseOpts,indexAxis:'y',plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:10}}}}}});
+  const cards=[["Campañas incluidas",inc.length,"b"],["Inversión","$"+fmt(spend),"c"],["Alcance",fmt(reach),""],["Clics",fmt(clicks),""],["CTR",ctr.toFixed(2)+"%","c"],["Campañas activas",inc.filter(a=>a.status==='Activa').length,"b"]];
+  const box=document.getElementById('combined');box.innerHTML='';
+  cards.forEach(([l,v,cl])=>box.insertAdjacentHTML('beforeend',`<div class="kpi ${cl}"><div class="label">${l}</div><div class="value" style="font-size:20px">${v}</div></div>`));
+  document.getElementById('adsNote').innerHTML='<b>Nota:</b> el alcance es la suma de cada campaña — puede contar la misma persona varias veces si fue impactada por múltiples campañas. Para branding, mirá sobre todo el <b>CPM</b> y la distribución por objetivo.';
+}
+
+// ── SMARTLINKS ────────────────────────────────────────────────────────────────
+function renderSL(){
+  const tv=SL.reduce((s,r)=>s+r.vis,0),tc=SL.reduce((s,r)=>s+r.cb,0),tl=SL.reduce((s,r)=>s+r.loc,0),tw=SL.reduce((s,r)=>s+r.wa,0);
+  const sk=document.getElementById('slKpis');sk.innerHTML='';
+  const skpi=(l,v,cl)=>`<div class="kpi ${cl}"><div class="label">${l}</div><div class="value">${v}</div></div>`;
+  sk.insertAdjacentHTML('beforeend',skpi('Puntos de venta',SL.length,'b'));
+  sk.insertAdjacentHTML('beforeend',skpi('Visitas totales',fmt(tv),''));
+  sk.insertAdjacentHTML('beforeend',skpi('Clics botones',fmt(tc),'c'));
+  sk.insertAdjacentHTML('beforeend',skpi('CTR promedio',(tv?tc/tv*100:0).toFixed(2)+'%','b'));
+  sk.insertAdjacentHTML('beforeend',skpi('Clics Ubicación',fmt(tl),''));
+  sk.insertAdjacentHTML('beforeend',skpi('Clics WhatsApp',fmt(tw),'c'));
+  const bO={responsive:true,animation:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:55,minRotation:45}}}};
+  const top=SL.slice().sort((a,b)=>b.vis-a.vis).slice(0,12);
+  if(charts.cSlVis)charts.cSlVis.destroy();
+  charts.cSlVis=new Chart(document.getElementById('cSlVis'),{type:'bar',data:{labels:top.map(r=>r.name),datasets:[{label:'Visitas',data:top.map(r=>r.vis),backgroundColor:ACC}]},options:bO});
+  const t2=SL.slice().sort((a,b)=>b.cb-a.cb).slice(0,10);
+  if(charts.cSlBtn)charts.cSlBtn.destroy();
+  charts.cSlBtn=new Chart(document.getElementById('cSlBtn'),{type:'bar',data:{labels:t2.map(r=>r.name),datasets:[{label:'Ubicación',data:t2.map(r=>r.loc),backgroundColor:ACC2},{label:'WhatsApp',data:t2.map(r=>r.wa),backgroundColor:ACC3}]},options:{responsive:true,animation:false,plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:55}},y:{stacked:true,beginAtZero:true}}}});
+  const tb=document.querySelector('#slTbl tbody');tb.innerHTML='';
+  SL.forEach(r=>{const ctr=r.vis?(r.cb/r.vis*100):0;tb.insertAdjacentHTML('beforeend',`<tr><td>${r.name}</td><td>${r.vis.toLocaleString('es-AR')}</td><td><b>${r.cb}</b></td><td>${ctr.toFixed(2)}</td><td>${r.loc}</td><td>${r.wa}</td></tr>`);});
+  ['slV','slC','slCtr','slL','slW'].forEach((id,i)=>{document.getElementById(id).textContent=[tv,tc,(tv?tc/tv*100:0).toFixed(2),tl,tw][i].toLocaleString('es-AR');});
+  document.getElementById('slNote').innerHTML=`<b>Lectura:</b> ${fmt(tv)} visitas al mapa de puntos de venta y ${tc} clics en botones (CTR ${(tv?tc/tv*100:0).toFixed(2)}%). El botón <b>Ubicación/PDV</b> domina sobre WhatsApp (${tl} vs ${tw}): la gente busca dónde comprar. Don Antonio (0 visitas) era campaña de Alcance, no de tráfico.`;
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+function render(){
+  const net=document.getElementById('network').value;
+  const isAds=net==='metaads';
+  const isHist=net==='historico'||net==='ig_only';
+  const igOnly=net==='ig_only';
+  document.getElementById('histView').classList.toggle('hidden',!isHist);
+  document.getElementById('adsView').classList.toggle('hidden',!isAds);
+  document.getElementById('netStatus').textContent=
+    isAds?'Meta Ads — API':
+    igOnly?'Instagram — solo IG · Metricool':'IG + FB · Metricool + Meta Ads';
+  updateMonthUI();
+  const aiWrap=document.getElementById('aiAnalysisWrap');
+  if(aiWrap) aiWrap.style.display=isHist?'block':'none';
+  if(isAds){renderAds();return;}
+  renderHistorico(igOnly);
+}
+
+// ── LISTENERS ─────────────────────────────────────────────────────────────────
+document.getElementById('network').addEventListener('change',render);
+document.getElementById('monthMode').addEventListener('change',()=>{updateMonthUI();render();});
+document.getElementById('mesFrom').addEventListener('change',render);
+document.getElementById('mesTo').addEventListener('change',render);
+document.getElementById('compare').addEventListener('change',()=>{updateMonthUI();render();});
+document.getElementById('mesCompFrom').addEventListener('change',render);
+document.getElementById('mesCompTo').addEventListener('change',render);
+document.querySelectorAll('#adFilters .fpill').forEach(b=>b.addEventListener('click',()=>{
+  adFilter=b.dataset.f;
+  document.querySelectorAll('#adFilters .fpill').forEach(x=>x.classList.toggle('active',x===b));
+  renderAds();
+}));
+document.getElementById('adCompare').addEventListener('change',function(){updateAdCompareUI();renderAds();});
+document.getElementById('adMesCompFrom').addEventListener('change',renderAds);
+document.getElementById('adMesCompTo').addEventListener('change',renderAds);
+
+buildMonthSelects();
+buildAdMonthPills();
+render();
+</script>
+</body>
+</html>
