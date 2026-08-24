@@ -249,13 +249,24 @@ function parseCSV(texto){
 }
 
 // ── filas -> objetos. Busca la fila de encabezados (la planilla tiene título arriba).
-function aObjetos(filas, pista){
+function aObjetos(filas, pista, primeraCol){
   let h=-1;
+  // 1) fila que tenga la celda exacta
   for(let i=0;i<Math.min(filas.length,8);i++){
     if(filas[i].some(c=>String(c).trim()===pista)){ h=i; break; }
   }
+  // 2) si Google fusionó el título con los encabezados, la celda TERMINA con la pista
+  if(h<0){
+    for(let i=0;i<Math.min(filas.length,8);i++){
+      if(filas[i].some(c=>String(c).trim().endsWith(pista))){ h=i; break; }
+    }
+  }
   if(h<0) return [];
   const cols=filas[h].map(x=>String(x).trim());
+  // si Google pegó el título del documento adelante del encabezado, dejar solo el encabezado
+  const limpiar=(s,nombre)=> (nombre && s!==nombre && s.endsWith(nombre)) ? nombre : s;
+  for(let j=0;j<cols.length;j++) cols[j]=limpiar(cols[j], pista);
+  cols[0]=limpiar(cols[0], primeraCol||pista);
   return filas.slice(h+1).map(f=>{
     const o={};
     cols.forEach((c,j)=>{ if(c) o[c]=(f[j]!==undefined?String(f[j]).trim():''); });
@@ -305,7 +316,7 @@ const ultimoDia = (a,m) => new Date(+a, +m, 0).getDate();
 
 function traer(hoja){
   const url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+
-            '/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(hoja)+'&_='+Date.now();
+            '/gviz/tq?tqx=out:csv&headers=0&sheet='+encodeURIComponent(hoja)+'&_='+Date.now();
   return fetch(url).then(r=>{
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.text();
@@ -356,7 +367,7 @@ async function cargarDatos(){
   }
 
   // ── PUBLICACIONES
-  const fPosts = crudo.posts ? aObjetos(crudo.posts,'Pos.') : [];
+  const fPosts = crudo.posts ? aObjetos(crudo.posts,'Pos.','Mes') : [];
   const posts = fPosts.filter(f=>parseMes(f['Mes'])).map(f=>{
     const red=(f['Red']||'').toUpperCase().startsWith('FB') ? 'FB'
             : (f['Red']||'').toUpperCase().startsWith('IG') ? 'IG'
@@ -389,7 +400,7 @@ async function cargarDatos(){
   // ── HISTÓRICO MENSUAL -> seguidores nuevos por día
   //    La planilla es mensual. El total de cada mes se reparte en partes iguales
   //    entre sus días, para que cualquier rango personalizado dé un valor proporcional.
-  const fHist = crudo.hist ? aObjetos(crudo.hist,'Mes') : [];
+  const fHist = crudo.hist ? aObjetos(crudo.hist,'Mes','Mes') : [];
   const meses = fHist.filter(f=>parseMes(f['Mes']) && !/^TOTAL/i.test(f['Mes']||''));
   if(meses.length){
     const dias={};
@@ -416,9 +427,9 @@ async function cargarDatos(){
                'Femenino':'F','Masculino':'M','Sin especificar':'U'};
     crudo.aud.forEach(f=>{
       const a=String(f[0]||'').trim(), b=f[1];
-      if(/^Género$/i.test(a)){ bloque='g'; return; }
-      if(/^Rango de Edad$/i.test(a)){ bloque='e'; return; }
-      if(/^Ciudad$/i.test(a)){ bloque='c'; return; }
+      if(/(^|\s)Género$/i.test(a)){ bloque='g'; return; }
+      if(/(^|\s)Rango de Edad$/i.test(a)){ bloque='e'; return; }
+      if(/(^|\s)Ciudad$/i.test(a)){ bloque='c'; return; }
       if(!a || b===undefined || String(b).trim()===''){ return; }
       const v=num(b);
       if(bloque==='g' && GEN[a]!==undefined) gen.push([GEN[a], v]);
@@ -442,7 +453,7 @@ async function cargarDatos(){
   }
 
   // ── CAMPAÑAS
-  const fAds = crudo.ads ? aObjetos(crudo.ads,'Nombre Campaña') : [];
+  const fAds = crudo.ads ? aObjetos(crudo.ads,'Nombre Campaña','Mes') : [];
   const ads = fAds.filter(f=>(f['Nombre Campaña']||'').trim() &&
                              !/^TOTAL/i.test(f['Mes']||'')).map(f=>({
     name:(f['Nombre Campaña']||'').trim(), obj:(f['Objetivo']||'').trim(),
@@ -464,7 +475,7 @@ async function cargarDatos(){
 
   // ── SMARTLINKS PdV (resultados por punto de venta)
   if(crudo.pdv){
-    const f=aObjetos(crudo.pdv,'Punto de Venta');
+    const f=aObjetos(crudo.pdv,'Punto de Venta','Punto de Venta');
     const filas=f.filter(x=>(x['Punto de Venta']||'').trim() &&
                             !/^TOTAL/i.test((x['Punto de Venta']||'').trim()))
       .map(x=>{
