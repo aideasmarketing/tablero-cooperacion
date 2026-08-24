@@ -307,9 +307,9 @@ function traer(hoja){
   const url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+
             '/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(hoja)+'&_='+Date.now();
   return fetch(url).then(r=>{
-    if(!r.ok) throw new Error(hoja+' HTTP '+r.status);
+    if(!r.ok) throw new Error('HTTP '+r.status);
     return r.text();
-  }).then(t=>{
+  }, e=>{ throw new Error('Failed to fetch ('+(e&&e.message?e.message:'red')+')'); }).then(t=>{
     if(t.trim().startsWith('<')) throw new Error(hoja+': la planilla no es pública');
     return parseCSV(t);
   });
@@ -330,15 +330,28 @@ async function cargarDatos(){
   }
   const claves=Object.keys(HOJAS);
   const res=await Promise.allSettled(claves.map(k=>traer(HOJAS[k])));
-  const crudo={}, fallaron=[];
+  const crudo={}, fallaron=[], motivos=[];
   res.forEach((r,i)=>{
     if(r.status==='fulfilled') crudo[claves[i]]=r.value;
-    else fallaron.push(HOJAS[claves[i]]);
+    else {
+      fallaron.push(HOJAS[claves[i]]);
+      const m=(r.reason && r.reason.message) ? r.reason.message : String(r.reason||'error');
+      motivos.push(m);
+      console.error('[tablero] no se pudo leer la hoja "'+HOJAS[claves[i]]+'": '+m);
+    }
   });
 
   // Si no se pudo leer ni una hoja, se conservan los datos de respaldo.
   if(!Object.keys(crudo).length){
-    aviso('No se pudo leer la planilla — mostrando datos guardados', false);
+    const m=motivos[0]||'';
+    let causa='';
+    if(/no es pública/i.test(m))      causa=' · la planilla no está compartida como "Cualquiera con el enlace → Lector"';
+    else if(/\b404\b/.test(m))        causa=' · no se encontró la planilla (revisá el ID)';
+    else if(/\b40[13]\b/.test(m))     causa=' · Google denegó el acceso (permisos de la planilla)';
+    else if(/Failed to fetch|NetworkError|load failed/i.test(m))
+                                      causa=' · el navegador bloqueó el pedido (permisos o conexión)';
+    else if(m)                        causa=' · '+m;
+    aviso('No se pudo leer la planilla'+causa+' — mostrando datos guardados', false);
     return false;
   }
 
