@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- VERSION: encabezados-por-posicion-v9 -->
 <title>Cooperación — Tablero de Redes</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <style>
@@ -249,18 +250,42 @@ function parseCSV(texto){
 }
 
 // ── filas -> objetos. Busca la fila de encabezados (la planilla tiene título arriba).
+// Google a veces devuelve VACÍO el nombre de las columnas numéricas.
+// Por eso, si falta un encabezado, se completa por posición con el orden
+// conocido de cada hoja.
+const ORDEN = {
+  'Fecha': ['Fecha','Mes','Pos.','Tipo','Red','Alcance','Vistas','Int. Orgánicas',
+            'Int. Pauta','Int. Totales','Likes','Comentarios','Compartidos','Guardados',
+            'Categoría','Link','Descripción'],
+  'Mes':   ['Mes','Seg. Nuevos','Total Seg.','Int. Totales','Int. Orgánicas','Int. Pauta',
+            'Alcance','Vistas','Inversión','CPR','CPC','Nota'],
+  'Nombre Campaña': ['Mes','Grupo','Nombre Campaña','Objetivo','Estado','Inversión',
+            'Impresiones','Alcance','Clics','Resultados'],
+  'Punto de Venta': ['Semana','Desde','Hasta','Punto de Venta','Campaña','Alcance',
+            'Impresiones','Clics','Visitas','Clics WhatsApp','Clics Dirección']
+};
+
 function aObjetos(filas, pista, primeraCol){
-  // Los encabezados están en la fila 1. Igual se busca por si quedó un título arriba.
   let h=0;
   for(let i=0;i<Math.min(filas.length,6);i++){
     if(filas[i].some(c=>String(c).trim()===pista)){ h=i; break; }
   }
-  if(h<0) h=0;
-  const cols=filas[h].map(x=>String(x).trim());
-  // por si Google pegó el título del documento adelante de un encabezado
+  let cols=filas[h].map(x=>String(x).trim());
   const limpiar=(s,n)=> (n && s!==n && s.endsWith(n)) ? n : s;
   for(let j=0;j<cols.length;j++) cols[j]=limpiar(cols[j], pista);
   if(primeraCol) cols[0]=limpiar(cols[0], primeraCol);
+
+  // Completar los encabezados que Google devolvió vacíos
+  const esperado = ORDEN[pista];
+  if(esperado){
+    let faltan=0;
+    for(let j=0;j<Math.max(cols.length,esperado.length);j++){
+      if(!cols[j] || cols[j]===''){ cols[j]=esperado[j]||('col'+j); faltan++; }
+    }
+    if(faltan) console.warn('[tablero] '+faltan+' encabezados vacíos en "'+pista+
+                            '": se completaron por posición');
+  }
+
   return filas.slice(h+1).map(f=>{
     const o={};
     cols.forEach((c,j)=>{ if(c) o[c]=(f[j]!==undefined?String(f[j]).trim():''); });
