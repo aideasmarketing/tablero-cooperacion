@@ -289,19 +289,41 @@ function num(v){
 // ── "Ene 2025" -> {a:'2025', m:'01'}
 function parseMes(v){
   const s=String(v||'').trim();
+  // "Ene 2025"
   let m=s.match(/^([A-Za-zÁÉÍÓÚáéíóú]{3})\w*\.?\s+(\d{4})$/);
   if(m){ const mm=MES_NUM[m[1][0].toUpperCase()+m[1].slice(1,3).toLowerCase()];
          if(mm) return {a:m[2], m:mm}; }
-  m=s.match(/^(\d{4})-(\d{2})/);            // "2026-05"
-  if(m) return {a:m[1], m:m[2]};
+  // "2026-05" o "2026-05-01"
+  m=s.match(/^(\d{4})-(\d{1,2})/);
+  if(m) return {a:m[1], m:m[2].padStart(2,'0')};
+  // Google a veces convierte el mes en fecha: "1/1/2025" o "01/05/2026"
+  m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if(m){
+    let d=+m[1], mes=+m[2];
+    if(mes>12){ const t=d; d=mes; mes=t; }     // formato mes/día
+    return {a:m[3], m:String(mes).padStart(2,'0')};
+  }
+  // "mayo de 2026" / "Mayo 2026" en texto largo
+  m=s.match(/([A-Za-zÁÉÍÓÚáéíóú]{3,})\w*\s+(?:de\s+)?(\d{4})/i);
+  if(m){ const mm=MES_NUM[m[1][0].toUpperCase()+m[1].slice(1,3).toLowerCase()];
+         if(mm) return {a:m[2], m:mm}; }
   return null;
 }
 
 // ── "13 Ene" + mes de referencia -> "2025-01-13"
 function fechaPost(dia, mesRef){
+  const s=String(dia||'').trim();
+  // Si Google convirtió el día en fecha completa, se usa directamente
+  let f=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(f) return `${f[1]}-${f[2].padStart(2,'0')}-${f[3].padStart(2,'0')}`;
+  f=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if(f){
+    let d=+f[1], mes=+f[2];
+    if(mes>12){ const t=d; d=mes; mes=t; }
+    return `${f[3]}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
   const r=parseMes(mesRef);
   if(!r) return '';
-  const s=String(dia||'').trim();
   let m=s.match(/^(\d{1,2})/);
   if(!m) return '';
   // si el día trae su propio mes ("13 Ene"), se usa ese
