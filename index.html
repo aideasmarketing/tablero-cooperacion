@@ -197,9 +197,9 @@ footer{font-size:12px;color:var(--muted);text-align:center;padding:16px;margin-t
     <div class="card" id="pdvTblCard" style="overflow-x:auto;max-height:460px;overflow-y:auto">
       <h3>Detalle por punto de venta</h3>
       <table class="adtbl" id="pdvTbl">
-        <thead><tr><th>Punto de venta</th><th>Visitas</th><th>Clics</th><th>CTR</th><th>Ubicación</th><th>WhatsApp</th></tr></thead>
+        <thead><tr><th>Punto de venta</th><th>Alcance</th><th>Clics pauta</th><th>CTR</th><th>Visitas link</th><th>Dirección</th><th>WhatsApp</th></tr></thead>
         <tbody></tbody>
-        <tfoot><tr class="totrow"><td>TOTAL</td><td id="pV">0</td><td id="pC">0</td><td id="pT">0%</td><td id="pL">0</td><td id="pW">0</td></tr></tfoot>
+        <tfoot><tr class="totrow"><td>TOTAL</td><td id="pV">0</td><td id="pC">0</td><td>—</td><td id="pT">0</td><td id="pL">0</td><td id="pW">0</td></tr></tfoot>
       </table>
     </div>
 
@@ -227,7 +227,7 @@ const HOJAS = {
   posts:  'Top Publicaciones',
   ads:    'Meta Ads Campañas',
   aud:    'Audiencia',
-  pdv:    'SmartLinks PdV'
+  pdv:    'PDV Semanal'
 };
 
 const MES_NUM = {Ene:'01',Feb:'02',Mar:'03',Abr:'04',May:'05',Jun:'06',
@@ -310,6 +310,22 @@ function fechaPost(dia, mesRef){
   if(mm){ const k=mm[1][0].toUpperCase()+mm[1].slice(1,3).toLowerCase();
           if(MES_NUM[k]) mes=MES_NUM[k]; }
   return `${r.a}-${mes}-${m[1].padStart(2,'0')}`;
+}
+
+// Normaliza una fecha a AAAA-MM-DD. Acepta 2026-05-12 y 12/5/2026.
+function fechaISO(v){
+  const s=String(v||'').trim();
+  if(!s) return '';
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+  if(m){
+    let [,d,mes,a]=m;
+    if(a.length===2) a='20'+a;
+    if(+mes>12){ [d,mes]=[mes,d]; }
+    return `${a}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  return '';
 }
 
 const ultimoDia = (a,m) => new Date(+a, +m, 0).getDate();
@@ -473,20 +489,19 @@ async function cargarDatos(){
             : (a.name.includes('Puntos de Venta')?'PDV':'Resto');
   });
 
-  // ── SMARTLINKS PdV (resultados por punto de venta)
+  // ── PUNTOS DE VENTA (una fila por semana y comercio)
   if(crudo.pdv){
-    const f=aObjetos(crudo.pdv,'Punto de Venta','Punto de Venta');
+    const f=aObjetos(crudo.pdv,'Punto de Venta','Semana');
     const filas=f.filter(x=>(x['Punto de Venta']||'').trim() &&
                             !/^TOTAL/i.test((x['Punto de Venta']||'').trim()))
-      .map(x=>{
-        let ctr=num(x['CTR %']);
-        if(ctr>0 && ctr<1) ctr=ctr*100;          // la planilla lo guarda como fracción
-        return {
-          name:(x['Punto de Venta']||'').trim(),
-          visits:num(x['Visitas']), clicks:num(x['Clics Totales']),
-          ctr:ctr, loc:num(x['Clics Ubicación']), wa:num(x['Clics WhatsApp'])
-        };
-      });
+      .map(x=>({
+        name:(x['Punto de Venta']||'').trim(),
+        semana:num(x['Semana']),
+        desde:fechaISO(x['Desde']), hasta:fechaISO(x['Hasta']),
+        reach:num(x['Alcance']), impr:num(x['Impresiones']), clics:num(x['Clics']),
+        visits:num(x['Visitas']), wa:num(x['Clics WhatsApp']), loc:num(x['Clics Dirección'])
+      }))
+      .filter(x=>x.desde && x.hasta);
     if(filas.length) PDV=filas;
   }
 
@@ -760,48 +775,68 @@ function renderPdv(){
   if(row) row.classList.toggle('hidden',!hay);
   if(!hay){ ['cPdv','cPdvDest'].forEach(c=>{if(charts[c]){charts[c].destroy();charts[c]=null;}}); return; }
 
-  const t=k=>PDV.reduce((s,p)=>s+(p[k]||0),0);
-  const visits=t('visits'), clicks=t('clicks'), loc=t('loc'), wa=t('wa');
-  const ctr = visits ? clicks/visits*100 : 0;
-  const activos = PDV.filter(p=>p.visits>0).length;
+  // Semanas que caen dentro del rango elegido (se incluye la que se superpone)
+  const {from,to}=getRange();
+  const dentro = PDV.filter(p=> p.hasta>=from && p.desde<=to );
+  const ws = dentro.length ? dentro : PDV;
+
+  // Acumulado por punto de venta
+  const porPdv={};
+  ws.forEach(p=>{
+    const a=porPdv[p.name]=porPdv[p.name]||{name:p.name,reach:0,impr:0,clics:0,visits:0,wa:0,loc:0,semanas:0};
+    a.reach+=p.reach; a.impr+=p.impr; a.clics+=p.clics;
+    a.visits+=p.visits; a.wa+=p.wa; a.loc+=p.loc; a.semanas++;
+  });
+  const lista=Object.values(porPdv);
+
+  const t=k=>lista.reduce((s,p)=>s+(p[k]||0),0);
+  const visits=t('visits'), wa=t('wa'), loc=t('loc'), clics=t('clics'), reach=t('reach');
+  const acciones=wa+loc;
+  const semanas=[...new Set(ws.map(p=>p.semana))].length;
+  const activos=lista.filter(p=>p.visits>0).length;
 
   document.getElementById('pdvKpis').innerHTML = [
-    ['Visitas a los links', visits.toLocaleString('es-AR'), `${activos} de ${PDV.length} con tráfico`],
-    ['Clics totales', clicks.toLocaleString('es-AR'), `CTR ${ctr.toFixed(2)}%`],
-    ['Clics a ubicación', loc.toLocaleString('es-AR'), clicks?`${(loc/clicks*100).toFixed(0)}% de los clics`:''],
-    ['Clics a WhatsApp', wa.toLocaleString('es-AR'), clicks?`${(wa/clicks*100).toFixed(0)}% de los clics`:'']
+    ['Visitas a los links', visits.toLocaleString('es-AR'), `${activos} de ${lista.length} comercios con tráfico`],
+    ['Acciones en el link', acciones.toLocaleString('es-AR'), visits?`${(acciones/visits*100).toFixed(1)}% de las visitas`:''],
+    ['Clics a dirección', loc.toLocaleString('es-AR'), acciones?`${(loc/acciones*100).toFixed(0)}% de las acciones`:''],
+    ['Clics a WhatsApp', wa.toLocaleString('es-AR'), acciones?`${(wa/acciones*100).toFixed(0)}% de las acciones`:'']
   ].map(([t,v,s],i)=>`<div class="kpi ${['','b','c',''][i]}"><div class="label">${t}</div><div class="value">${v}</div><div class="chg flat">${s}</div></div>`).join('');
 
-  // ranking por clics
-  const top=PDV.slice().sort((a,b)=>b.clicks-a.clicks).slice(0,10);
+  const tit=document.getElementById('pdvTitle');
+  if(tit) tit.textContent=`🏪 Puntos de venta — ${semanas} semana${semanas===1?'':'s'} · `+
+    `${clics.toLocaleString('es-AR')} clics en pauta · alcance acumulado ${reach.toLocaleString('es-AR')}`;
+
+  // ranking por visitas
+  const top=lista.slice().sort((a,b)=>b.visits-a.visits).slice(0,10);
   if(charts.cPdv)charts.cPdv.destroy();
   charts.cPdv=new Chart(cPdv,{type:'bar',
     data:{labels:top.map(p=>p.name.length>26?p.name.slice(0,24)+'…':p.name),
-          datasets:[{label:'Clics',data:top.map(p=>p.clicks),backgroundColor:ACC},
-                    {label:'Visitas',data:top.map(p=>p.visits),backgroundColor:'#cbd5d0'}]},
+          datasets:[{label:'Visitas al link',data:top.map(p=>p.visits),backgroundColor:ACC},
+                    {label:'Acciones (dirección + WhatsApp)',data:top.map(p=>p.wa+p.loc),backgroundColor:ACC2}]},
     options:{...baseOpts,indexAxis:'y'}});
 
   if(charts.cPdvDest)charts.cPdvDest.destroy();
-  const otros=Math.max(0, clicks-loc-wa);
   charts.cPdvDest=new Chart(cPdvDest,{type:'doughnut',
-    data:{labels:['Ubicación','WhatsApp','Otros'],
-          datasets:[{data:[loc,wa,otros],backgroundColor:[ACC,ACC2,'#cbd5d0']}]},
+    data:{labels:['Clics a dirección','Clics a WhatsApp'],
+          datasets:[{data:[loc,wa],backgroundColor:[ACC,ACC2]}]},
     options:{responsive:true,maintainAspectRatio:false}});
 
   const tb=document.querySelector('#pdvTbl tbody'); tb.innerHTML='';
-  PDV.slice().sort((a,b)=>b.clicks-a.clicks).forEach(p=>{
+  lista.slice().sort((a,b)=>b.visits-a.visits).forEach(p=>{
+    const ctr = p.impr ? (p.clics/p.impr*100) : 0;
     tb.insertAdjacentHTML('beforeend',
       `<tr${p.visits?'':' class="excluded"'}>
         <td title="${p.name.replace(/"/g,'&quot;')}">${p.name}</td>
-        <td>${p.visits.toLocaleString('es-AR')}</td>
-        <td><b>${p.clicks.toLocaleString('es-AR')}</b></td>
-        <td>${p.ctr.toFixed(2)}%</td>
+        <td>${p.reach.toLocaleString('es-AR')}</td>
+        <td>${p.clics.toLocaleString('es-AR')}</td>
+        <td>${ctr.toFixed(2)}%</td>
+        <td><b>${p.visits.toLocaleString('es-AR')}</b></td>
         <td>${p.loc.toLocaleString('es-AR')}</td>
         <td>${p.wa.toLocaleString('es-AR')}</td></tr>`);
   });
-  pV.textContent=visits.toLocaleString('es-AR');
-  pC.textContent=clicks.toLocaleString('es-AR');
-  pT.textContent=ctr.toFixed(2)+'%';
+  pV.textContent=reach.toLocaleString('es-AR');
+  pC.textContent=clics.toLocaleString('es-AR');
+  pT.textContent=visits.toLocaleString('es-AR');
   pL.textContent=loc.toLocaleString('es-AR');
   pW.textContent=wa.toLocaleString('es-AR');
 }
