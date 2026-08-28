@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- VERSION: numeros-corregidos-v8 -->
+<title>Cooperación — Tablero de Redes</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+:root{--bg:#eef4ef;--card:#fff;--header:#15573f;--accent:#3aa66b;--accent2:#2f8fd6;--accent3:#e0a93b;
+--ink:#173d2c;--muted:#6c8579;--pos:#3aa66b;--neg:#d2553f;--line:#e1ebe4;--radius:14px;--gap:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding:16px;line-height:1.45}
+.wrap{max-width:1200px;margin:0 auto}
+header.top{background:linear-gradient(135deg,#15573f,#1d7350);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:var(--gap)}
+.toprow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px}
+header.top h1{font-size:19px;font-weight:700}
+header.top .sub{font-size:12.5px;opacity:.85;margin-top:2px}
+.controls{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;align-items:flex-end}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;opacity:.75}
+.ctl select,.ctl input{padding:8px 11px;border:1px solid rgba(255,255,255,.28);border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font-size:13px}
+.ctl select option{background:var(--header);color:#fff}
+.ctl input[type=date]{color-scheme:dark}
+
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:18px 2px 12px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--gap)}
+.kpi{background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid var(--accent)}
+.kpi.b{border-top-color:var(--accent2)}.kpi.c{border-top-color:var(--accent3)}.kpi.muted{border-top-color:#cbd5d0}
+.kpi .label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.kpi .value{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .chg{font-size:12px;font-weight:600;margin-top:3px}
+.chg.pos{color:var(--pos)}.chg.neg{color:var(--neg)}.chg.flat{color:var(--muted)}
+.chart-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:var(--gap)}
+.card{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h3{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3 select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;color:var(--ink)}
+canvas{max-height:290px}
+/* top3 */
+.top3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap)}
+.podium{background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:5px solid var(--accent);position:relative}
+.podium.p1{border-left-color:#e0a93b}.podium.p2{border-left-color:#9aa7a0}.podium.p3{border-left-color:#b9824a}
+.podium .medal{font-size:22px}
+.podium .net{font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;color:#fff;margin-left:6px}
+.podium .ctext{font-size:13px;font-weight:600;margin:8px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+.podium a{color:inherit;text-decoration:none}.podium a:hover{text-decoration:underline}
+.podium .stats{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.podium .stats b{color:var(--ink);font-size:15px;display:block}
+.conclusion{background:#f0f7f2;border:1px solid #d4e6dc;border-radius:var(--radius);padding:14px 18px;margin-top:var(--gap);font-size:13.5px;line-height:1.55}
+.conclusion b{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:right;padding:9px 10px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+thead th:first-child,thead th:nth-child(2){text-align:left}
+tbody td{padding:9px 10px;border-bottom:1px solid #f1f4f3;text-align:right}
+tbody td:first-child,tbody td:nth-child(2){text-align:left}
+tbody tr:hover{background:#f4faf6}
+.tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:11px;color:#fff;white-space:nowrap}
+.tag.Carrusel,.tag.Álbum{background:var(--accent3)}.tag.Imagen,.tag.Foto{background:var(--accent2)}.tag.Reel,.tag.Video{background:#9b59b6}
+.cap{max-width:330px;color:var(--accent2);text-decoration:none;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.cap:hover{text-decoration:underline}
+.net-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:rgba(255,255,255,.16);padding:6px 12px;border-radius:20px}
+.dot{width:8px;height:8px;border-radius:50%;background:#86efac}
+.adtbl input{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;width:100%}
+.adtbl input[type=text]{min-width:150px}
+.adtbl td{text-align:right}.adtbl td:first-child{text-align:left}
+.adtbl tr.excluded{opacity:.4}.adtbl tr.excluded input{text-decoration:line-through}
+.totrow td{font-weight:800;border-top:2px solid var(--line);background:#f4faf6}
+.btn{padding:8px 14px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.fpill{border:1px solid var(--line);background:#fff;color:var(--ink);padding:6px 14px;border-radius:18px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s}
+.fpill:hover{border-color:var(--accent)}
+.fpill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chk{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.fpills{display:flex;gap:6px;flex-wrap:wrap}
+.note{font-size:13px;color:var(--muted);margin-bottom:12px}
+.pill{display:inline-block;font-size:11px;background:#fbeccd;color:#9a6a16;padding:3px 9px;border-radius:12px;font-weight:600;margin-left:8px}
+.hidden{display:none!important}
+footer{font-size:12px;color:var(--muted);text-align:center;padding:16px;margin-top:8px}
+@media(max-width:680px){.kpi-row{grid-template-columns:repeat(2,1fr)}.chart-row{grid-template-columns:1fr}.cap{max-width:150px}}
+@media print{body{background:#fff}.controls,.btn{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="toprow">
+      <div class="brand">
+        <div class="logo">🌱</div>
+        <div><h1>Cooperación Alimento Balanceado</h1>
+        <div class="sub" id="rangeLabel">Nutrición en armonía con el planeta · tablero de redes</div>
+        <div class="sub" id="estado-datos" style="display:none;font-size:11px;opacity:.8;margin-top:3px"></div></div>
+      </div>
+      <span class="net-tag"><span class="dot"></span><span id="netStatus">IG + FB conectados (metricool)</span></span>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label>Red / Vista</label>
+        <select id="network">
+          <option value="all">🔗 Resumen (IG + FB)</option>
+          <option value="instagram">📷 Instagram</option>
+          <option value="facebook">📘 Facebook</option>
+          <option value="metaads">📊 Meta Ads (pagado)</option>
+        </select></div>
+      <div class="ctl"><label>Rango rápido</label>
+        <select id="range">
+          <option value="7">Últimos 7 días</option><option value="14">Últimos 14 días</option>
+          <option value="30">Últimos 30 días</option><option value="90" selected>Últimos 90 días</option>
+          <option value="custom">Personalizado</option>
+        </select></div>
+      <div class="ctl"><label>📅 Desde</label><input type="date" id="dFrom"></div>
+      <div class="ctl"><label>📅 Hasta</label><input type="date" id="dTo"></div>
+      <div class="ctl"><label>Comparar contra</label>
+        <select id="compare"><option value="prev" selected>Periodo anterior</option><option value="custom">Fechas personalizadas</option><option value="none">Sin comparación</option></select></div>
+      <div class="ctl" id="compDates" style="display:none"><label>📅 vs. Desde / Hasta</label>
+        <div style="display:flex;gap:8px"><input type="date" id="cFrom"><input type="date" id="cTo"></div></div>
+      <div class="ctl"><label>🏷️ Contenido</label>
+        <select id="cat"><option value="all">Todos</option><option value="Producto">Producto</option><option value="Marca">Marca / Contenido</option></select></div>
+    </div>
+  </header>
+
+  <div id="orgView">
+    <div class="section-title" id="kpiTitle">Resumen del periodo</div>
+    <section class="kpi-row" id="kpis"></section>
+
+    <div class="section-title" id="folTitle">📈 Evolución de seguidores nuevos (IG)</div>
+    <div class="chart-row" id="folRow"><div class="card"><h3>Seguidores nuevos por día <span id="folPeak" style="font-weight:500;font-size:12px;color:var(--muted)"></span></h3><canvas id="cfol"></canvas></div></div>
+
+    <div class="section-title">🏆 Top 3 contenidos del periodo</div>
+    <section class="top3" id="top3"></section>
+    <div class="conclusion" id="conclusion"></div>
+
+    <div class="section-title" id="audTitle">👥 Audiencia — foto actual de seguidores (IG)</div>
+    <div class="chart-row" id="audRow" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div class="card"><h3>Género</h3><canvas id="cGen"></canvas></div>
+      <div class="card"><h3>Edad</h3><canvas id="cAge"></canvas></div>
+      <div class="card"><h3>Top ciudades <span id="audGeo" style="font-weight:500;font-size:12px;color:var(--muted)"></span></h3><canvas id="cCity"></canvas></div>
+    </div>
+
+    <div class="section-title">🏷️ Producto vs. Marca / Contenido</div>
+    <div class="chart-row"><div class="card"><h3>Alcance y guardados promedio por tipo de contenido</h3><canvas id="cPB"></canvas></div>
+      <div class="card"><h3 id="pbTitle">Reparto de alcance</h3><canvas id="cPB2"></canvas></div></div>
+
+    <div class="section-title">Tendencias</div>
+    <section class="chart-row">
+      <div class="card"><h3 id="chart1Title">Comparación de redes</h3><canvas id="c1"></canvas></div>
+      <div class="card"><h3>Impresiones por publicación</h3><canvas id="c2"></canvas></div>
+    </section>
+
+    <div class="section-title">Detalle de contenidos</div>
+    <div class="card" style="overflow-x:auto">
+      <h3>Todas las publicaciones
+        <select id="sortBy">
+          <option value="impressions">Ordenar por: Impresiones</option>
+          <option value="reach">Ordenar por: Alcance</option>
+          <option value="interactions">Ordenar por: Interacciones</option>
+          <option value="likes">Ordenar por: Likes/Reacciones</option>
+          <option value="saved">Ordenar por: Guardados</option>
+        </select>
+      </h3>
+      <table id="topTbl">
+        <thead><tr><th>Fecha</th><th>Contenido</th><th>Red</th><th>Tipo</th><th>Impres.</th><th>Alcance</th><th>Interac.</th><th>Likes/Reac.</th><th>Guard.</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="adsView" class="hidden">
+    <div class="section-title">Meta Ads — pagado · datos reales (26 mar–23 jun 2026)</div>
+    <section class="kpi-row" id="adsKpis"></section>
+    <div class="chart-row">
+      <div class="card"><h3>Inversión por objetivo</h3><canvas id="cAdsObj"></canvas></div>
+      <div class="card"><h3>Top campañas por inversión</h3><canvas id="cAdsTop"></canvas></div>
+    </div>
+    <div class="section-title">Campañas <span class="pill">desmarcá ✓ para excluir del reporte</span></div>
+    <div class="card">
+      <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div id="adFilters" class="fpills">
+          <button class="fpill active" data-f="all">Todas</button>
+          <button class="fpill" data-f="PDV">🏪 Puntos de Venta</button>
+          <button class="fpill" data-f="Resto">⭐ Marca / Consumidor</button>
+        </div>
+        <span id="adCount" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+      <table class="adtbl" id="adTbl">
+        <thead><tr><th>Campaña</th><th>Objetivo</th><th>Estado</th><th>Inversión</th><th>Impres.</th><th>Alcance</th><th>Clics</th><th>Resultados</th><th>Incluir</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="totrow"><td>TOTAL (incluidas)</td><td colspan="2"></td><td id="tSpend">0</td><td id="tImpr">0</td><td id="tReach">0</td><td id="tClicks">0</td><td id="tRes">—</td><td></td></tr></tfoot>
+      </table></div>
+    </div>
+    <div class="section-title" id="pdvTitle">🏪 Puntos de venta — resultados de los SmartLinks</div>
+    <section class="kpi-row" id="pdvKpis"></section>
+    <div class="chart-row">
+      <div class="card"><h3>Clics por punto de venta</h3><canvas id="cPdv"></canvas></div>
+      <div class="card"><h3>Destino de los clics</h3><canvas id="cPdvDest"></canvas></div>
+    </div>
+    <div class="card" id="pdvTblCard" style="overflow-x:auto;max-height:460px;overflow-y:auto">
+      <h3>Detalle por punto de venta</h3>
+      <table class="adtbl" id="pdvTbl">
+        <thead><tr><th>Punto de venta</th><th>Alcance</th><th>Clics pauta</th><th>CTR</th><th>Visitas link</th><th>Dirección</th><th>WhatsApp</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="totrow"><td>TOTAL</td><td id="pV">0</td><td id="pC">0</td><td>—</td><td id="pT">0</td><td id="pL">0</td><td id="pW">0</td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="section-title">KPIs combinados (pagado incluido + orgánico del periodo)</div>
+    <section class="kpi-row" id="combined"></section>
+    <div class="conclusion" id="adsNote" style="margin-top:12px"></div>
+  </div>
+
+  <footer>Datos reales de Cooperación vía metricool (IG + FB) y seguidores IG vía Instagram Insights. Seguidores FB: requiere conectar Facebook Organic. Histórico al 13 jun 2026.</footer>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  CONEXIÓN CON GOOGLE SHEETS                                          ║
+// ║                                                                      ║
+// ║  El tablero lee los datos de la planilla cada vez que se abre.        ║
+// ║  Para actualizarlo se carga la planilla: no se toca este archivo.     ║
+// ║                                                                      ║
+// ║  El ID es la parte del link entre  /d/  y  /edit                     ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+const SHEET_ID = '1oDHdrp0OsNtevQr-Gpy0TFVADiEHm5NqL9fMuZ9WW3Y';
+
+const HOJAS = {
+  hist:   'Histórico Mensual',
+  posts:  'Top Publicaciones',
+  ads:    'Meta Ads Campañas',
+  aud:    'Audiencia',
+  pdv:    'PDV Semanal'
+};
+
+const MES_NUM = {Ene:'01',Feb:'02',Mar:'03',Abr:'04',May:'05',Jun:'06',
+                 Jul:'07',Ago:'08',Sep:'09',Set:'09',Oct:'10',Nov:'11',Dic:'12'};
+
+// ── CSV -> filas
+function parseCSV(texto){
+  const filas=[]; let fila=[], celda='', q=false;
+  for(let i=0;i<texto.length;i++){
+    const ch=texto[i];
+    if(q){ if(ch==='"'){ if(texto[i+1]==='"'){celda+='"';i++;} else q=false; } else celda+=ch; }
+    else if(ch==='"') q=true;
+    else if(ch===','){ fila.push(celda); celda=''; }
+    else if(ch==='\n'){ fila.push(celda); filas.push(fila); fila=[]; celda=''; }
+    else if(ch!=='\r') celda+=ch;
+  }
+  if(celda!==''||fila.length){ fila.push(celda); filas.push(fila); }
+  return filas;
+}
+
+// ── filas -> objetos. Busca la fila de encabezados (la planilla tiene título arriba).
+function aObjetos(filas, pista, primeraCol){
+  // Los encabezados están en la fila 1. Igual se busca por si quedó un título arriba.
+  let h=0;
+  for(let i=0;i<Math.min(filas.length,6);i++){
+    if(filas[i].some(c=>String(c).trim()===pista)){ h=i; break; }
+  }
+  if(h<0) h=0;
+  const cols=filas[h].map(x=>String(x).trim());
+  // por si Google pegó el título del documento adelante de un encabezado
+  const limpiar=(s,n)=> (n && s!==n && s.endsWith(n)) ? n : s;
+  for(let j=0;j<cols.length;j++) cols[j]=limpiar(cols[j], pista);
+  if(primeraCol) cols[0]=limpiar(cols[0], primeraCol);
+  return filas.slice(h+1).map(f=>{
+    const o={};
+    cols.forEach((c,j)=>{ if(c) o[c]=(f[j]!==undefined?String(f[j]).trim():''); });
+    return o;
+  }).filter(o=>Object.values(o).some(v=>v!==''));
+}
+
+function num(v){
+  if(v===undefined||v===null) return 0;
+  let s=String(v).trim();
+  if(s===''||s==='-'||s==='—'||s.toLowerCase()==='n/a') return 0;
+  s=s.replace(/[%$\s]/g,'').replace(/\u00A0/g,'');
+  const coma=s.lastIndexOf(','), punto=s.lastIndexOf('.');
+  if(coma>=0 && punto>=0){
+    // el ÚLTIMO separador es el decimal; el otro es de miles
+    s = coma>punto ? s.replace(/\./g,'').replace(',','.')
+                   : s.replace(/,/g,'');
+  } else if(coma>=0){
+    // "1.234,5" ya cubierto arriba. Acá: coma sola.
+    // Si quedan exactamente 3 dígitos después, es separador de miles.
+    s = /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g,'') : s.replace(',','.');
+  } else if(punto>=0){
+    // Punto solo. En formato argentino suele ser separador de miles: 1.491
+    // Se trata como miles si hay grupos exactos de 3 dígitos.
+    if(/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,'');
+  }
+  const n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+
+// ── "Ene 2025" -> {a:'2025', m:'01'}
+function parseMes(v){
+  const s=String(v||'').trim();
+  // "Ene 2025"
+  let m=s.match(/^([A-Za-zÁÉÍÓÚáéíóú]{3})\w*\.?\s+(\d{4})$/);
+  if(m){ const mm=MES_NUM[m[1][0].toUpperCase()+m[1].slice(1,3).toLowerCase()];
+         if(mm) return {a:m[2], m:mm}; }
+  // "2026-05" o "2026-05-01"
+  m=s.match(/^(\d{4})-(\d{1,2})/);
+  if(m) return {a:m[1], m:m[2].padStart(2,'0')};
+  // Google a veces convierte el mes en fecha: "1/1/2025" o "01/05/2026"
+  m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if(m){
+    let d=+m[1], mes=+m[2];
+    if(mes>12){ const t=d; d=mes; mes=t; }     // formato mes/día
+    return {a:m[3], m:String(mes).padStart(2,'0')};
+  }
+  // "mayo de 2026" / "Mayo 2026" en texto largo
+  m=s.match(/([A-Za-zÁÉÍÓÚáéíóú]{3,})\w*\s+(?:de\s+)?(\d{4})/i);
+  if(m){ const mm=MES_NUM[m[1][0].toUpperCase()+m[1].slice(1,3).toLowerCase()];
+         if(mm) return {a:m[2], m:mm}; }
+  return null;
+}
+
+// ── "13 Ene" + mes de referencia -> "2025-01-13"
+function fechaPost(dia, mesRef){
+  const s=String(dia||'').trim();
+  // Si Google convirtió el día en fecha completa, se usa directamente
+  let f=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(f) return `${f[1]}-${f[2].padStart(2,'0')}-${f[3].padStart(2,'0')}`;
+  f=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if(f){
+    let d=+f[1], mes=+f[2];
+    if(mes>12){ const t=d; d=mes; mes=t; }
+    return `${f[3]}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  const r=parseMes(mesRef);
+  if(!r) return '';
+  let m=s.match(/^(\d{1,2})/);
+  if(!m) return '';
+  // si el día trae su propio mes ("13 Ene"), se usa ese
+  const mm=s.match(/([A-Za-zÁÉÍÓÚáéíóú]{3})/);
+  let mes=r.m;
+  if(mm){ const k=mm[1][0].toUpperCase()+mm[1].slice(1,3).toLowerCase();
+          if(MES_NUM[k]) mes=MES_NUM[k]; }
+  return `${r.a}-${mes}-${m[1].padStart(2,'0')}`;
+}
+
+// Normaliza una fecha a AAAA-MM-DD. Acepta 2026-05-12 y 12/5/2026.
+function fechaISO(v){
+  const s=String(v||'').trim();
+  if(!s) return '';
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+  if(m){
+    let [,d,mes,a]=m;
+    if(a.length===2) a='20'+a;
+    if(+mes>12){ [d,mes]=[mes,d]; }
+    return `${a}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  return '';
+}
+
+const ultimoDia = (a,m) => new Date(+a, +m, 0).getDate();
+
+function traer(hoja){
+  const url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+
+            '/gviz/tq?tqx=out:csv&headers=0&sheet='+encodeURIComponent(hoja)+'&_='+Date.now();
+  return fetch(url).then(r=>{
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }, e=>{ throw new Error('Failed to fetch ('+(e&&e.message?e.message:'red')+')'); }).then(t=>{
+    if(t.trim().startsWith('<')) throw new Error(hoja+': la planilla no es pública');
+    return parseCSV(t);
+  });
+}
+
+function aviso(txt, ok){
+  const el=document.getElementById('estado-datos');
+  if(!el) return;
+  el.textContent=txt;
+  el.style.color = ok ? 'inherit' : '#ffd7d7';
+  el.style.display='block';
+}
+
+async function cargarDatos(){
+  if(!SHEET_ID || SHEET_ID.indexOf('PEGAR')===0){
+    aviso('Sin conectar a la planilla — mostrando datos guardados', false);
+    return false;
+  }
+  const claves=Object.keys(HOJAS);
+  const res=await Promise.allSettled(claves.map(k=>traer(HOJAS[k])));
+  const crudo={}, fallaron=[], motivos=[];
+  res.forEach((r,i)=>{
+    if(r.status==='fulfilled') crudo[claves[i]]=r.value;
+    else {
+      fallaron.push(HOJAS[claves[i]]);
+      const m=(r.reason && r.reason.message) ? r.reason.message : String(r.reason||'error');
+      motivos.push(m);
+      console.error('[tablero] no se pudo leer la hoja "'+HOJAS[claves[i]]+'": '+m);
+    }
+  });
+
+  // Si no se pudo leer ni una hoja, se conservan los datos de respaldo.
+  if(!Object.keys(crudo).length){
+    const m=motivos[0]||'';
+    let causa='';
+    if(/no es pública/i.test(m))      causa=' · la planilla no está compartida como "Cualquiera con el enlace → Lector"';
+    else if(/\b404\b/.test(m))        causa=' · no se encontró la planilla (revisá el ID)';
+    else if(/\b40[13]\b/.test(m))     causa=' · Google denegó el acceso (permisos de la planilla)';
+    else if(/Failed to fetch|NetworkError|load failed/i.test(m))
+                                      causa=' · el navegador bloqueó el pedido (permisos o conexión)';
+    else if(m)                        causa=' · '+m;
+    aviso('No se pudo leer la planilla'+causa+' — mostrando datos guardados', false);
+    return false;
+  }
+
+  // ── PUBLICACIONES (la columna Fecha ya viene como AAAA-MM-DD)
+  const fPosts = crudo.posts ? aObjetos(crudo.posts,'Fecha','Fecha') : [];
+  const posts = fPosts.map(f=>{
+    const red=(f['Red']||'').toUpperCase().startsWith('FB') ? 'FB' : 'IG';
+    return {
+      _red: red,
+      date: fechaISO(f['Fecha']),
+      type: (f['Tipo']||'').trim(),
+      content: (f['Descripción']||'').trim(),
+      url: (f['Link']||'').trim(),
+      impressions: num(f['Vistas']),          // Meta ya no da impresiones por posteo
+      reach: num(f['Alcance']),
+      views: num(f['Vistas']),
+      clicks: 0,
+      interactions: num(f['Int. Totales']),
+      likes: num(f['Likes']),
+      comments: num(f['Comentarios']),
+      saved: num(f['Guardados']),
+      shares: num(f['Compartidos']),
+      org: num(f['Int. Orgánicas']),
+      paid: num(f['Int. Pauta']),
+      cat: (f['Categoría']||'').trim()
+    };
+  }).filter(p=>p.date);
+  if(posts.length){
+    DATA = { instagram: posts.filter(p=>p._red==='IG'),
+             facebook:  posts.filter(p=>p._red==='FB') };
+  }
+
+  // ── HISTÓRICO MENSUAL -> seguidores nuevos por día
+  //    La planilla es mensual. El total de cada mes se reparte en partes iguales
+  //    entre sus días, para que cualquier rango personalizado dé un valor proporcional.
+  const fHist = crudo.hist ? aObjetos(crudo.hist,'Mes','Mes') : [];
+  const meses = fHist.filter(f=>parseMes(f['Mes']) && !/^TOTAL/i.test(f['Mes']||''));
+  if(meses.length){
+    const dias={};
+    let totalSeg=0;
+    meses.forEach(f=>{
+      const r=parseMes(f['Mes']); if(!r) return;
+      const nuevos=num(f['Seg. Nuevos']);
+      const nd=ultimoDia(r.a, r.m);
+      const porDia=nuevos/nd;
+      for(let d=1;d<=nd;d++){
+        dias[`${r.a}-${r.m}-${String(d).padStart(2,'0')}`]=porDia;
+      }
+      const t=num(f['Total Seg.']); if(t) totalSeg=t;
+    });
+    const ks=Object.keys(dias).sort();
+    if(ks.length) FOL={ig:dias, ig_total:totalSeg||FOL.ig_total, ig_from:ks[0]};
+  }
+
+  // ── AUDIENCIA (tres bloques en la misma hoja)
+  if(crudo.aud){
+    const gen=[], age=[], cit=[];
+    let bloque='';
+    const GEN={'Mujeres':'F','Hombres':'M','No especificado':'U',
+               'Femenino':'F','Masculino':'M','Sin especificar':'U'};
+    crudo.aud.forEach(f=>{
+      const a=String(f[0]||'').trim(), b=f[1];
+      if(/(^|\s)Género$/i.test(a)){ bloque='g'; return; }
+      if(/(^|\s)Rango de Edad$/i.test(a)){ bloque='e'; return; }
+      if(/(^|\s)Ciudad$/i.test(a)){ bloque='c'; return; }
+      if(!a || b===undefined || String(b).trim()===''){ return; }
+      const v=num(b);
+      if(bloque==='g' && GEN[a]!==undefined) gen.push([GEN[a], v]);
+      else if(bloque==='e') age.push([a, v]);
+      else if(bloque==='c') cit.push([a, v]);
+    });
+    const nd={...DEMO};
+    if(gen.length) nd.gender=gen;
+    if(age.length) nd.ageRanges=age;
+    if(cit.length) nd.cities=cit;
+    // total de seguidores: sale del encabezado "Total seguidores: 1,394"
+    crudo.aud.slice(0,4).forEach(f=>{
+      const s=String(f[0]||'');
+      const m=s.match(/Total seguidores:\s*([\d.,]+)/i);
+      if(m) nd.totalFollowers=num(m[1]);
+      const p=s.match(/Argentina:\s*([\d.,]+)\s*%/i);
+      if(p) nd.arPct=num(p[1]);
+    });
+    DEMO=nd;
+    if(DEMO.totalFollowers) FOL.ig_total=DEMO.totalFollowers;
+  }
+
+  // ── CAMPAÑAS
+  const fAds = crudo.ads ? aObjetos(crudo.ads,'Nombre Campaña','Mes') : [];
+  const ads = fAds.filter(f=>(f['Nombre Campaña']||'').trim() &&
+                             !/^TOTAL/i.test(f['Mes']||'')).map(f=>({
+    name:(f['Nombre Campaña']||'').trim(), obj:(f['Objetivo']||'').trim(),
+    status:(f['Estado']||'').trim(), spend:num(f['Inversión']),
+    impr:num(f['Impresiones']), reach:num(f['Alcance']),
+    clicks:num(f['Clics']), res:num(f['Resultados']),
+    resType:(f['Objetivo']||'').trim()==='Tráfico'?'Clics en el enlace':'Interacciones',
+    _mes:(f['Mes']||'').trim(), _grupo:(f['Grupo']||'').trim()
+  }));
+  if(ads.length) ADS=ads;
+
+  // el tablero le agrega estos campos; se respeta el Grupo de la planilla si viene
+  ADS.forEach((a,i)=>{
+    a.inc=true; a.i=i;
+    a.grupo = a._grupo==='PDV' ? 'PDV'
+            : a._grupo ? 'Resto'
+            : (a.name.includes('Puntos de Venta')?'PDV':'Resto');
+  });
+
+  // ── PUNTOS DE VENTA (una fila por semana y comercio)
+  if(crudo.pdv){
+    const f=aObjetos(crudo.pdv,'Punto de Venta','Semana');
+    const filas=f.filter(x=>(x['Punto de Venta']||'').trim() &&
+                            !/^TOTAL/i.test((x['Punto de Venta']||'').trim()))
+      .map(x=>({
+        name:(x['Punto de Venta']||'').trim(),
+        semana:num(x['Semana']),
+        desde:fechaISO(x['Desde']), hasta:fechaISO(x['Hasta']),
+        reach:num(x['Alcance']), impr:num(x['Impresiones']), clics:num(x['Clics']),
+        visits:num(x['Visitas']), wa:num(x['Clics WhatsApp']), loc:num(x['Clics Dirección'])
+      }))
+      .filter(x=>x.desde && x.hasta);
+    if(filas.length) PDV=filas;
+  }
+
+  // ── Recalcular derivados
+  all = [...DATA.instagram.map(p=>({...p,net:'IG'})), ...DATA.facebook.map(p=>({...p,net:'FB'}))];
+  dates = all.map(p=>p.date).sort();
+  MAXDATE = dates[dates.length-1]; MINDATE = dates[0];
+
+  if(!posts.length) aviso('La planilla no tiene publicaciones legibles — mostrando datos guardados', false);
+  else if(fallaron.length) aviso('Datos de la planilla · no se pudo leer: '+fallaron.join(', '), false);
+  else aviso('Datos en vivo desde la planilla · última carga '+
+             new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}), true);
+  return true;
+}
+
+// Puntos de venta (SmartLinks). Se llena desde la planilla.
+let PDV = [];
+
+// ═══ DATOS DE RESPALDO ═══
+// Si la planilla no responde, el tablero muestra esto.
+let DATA = {"instagram": [{"date": "2026-03-17", "type": "Imagen", "content": "Mito de los gatos naranjas: datos curiosos para conocerlos mejor.", "url": "https://www.instagram.com/p/DV_ZlxojSIo/", "impressions": 14776, "reach": 237, "interactions": 29, "likes": 13, "comments": 13, "saved": 3, "shares": 0, "views": 395, "clicks": 0, "org": 14776, "paid": 0, "cat": "Marca"}, {"date": "2026-04-04", "type": "Imagen", "content": "Día Internacional de los Animales Callejeros: un gesto puede cambiar su historia.", "url": "https://www.instagram.com/p/DWte-lEAKeE/", "impressions": 11203, "reach": 183, "interactions": 15, "likes": 11, "comments": 3, "saved": 1, "shares": 0, "views": 306, "clicks": 0, "org": 11203, "paid": 0, "cat": "Marca"}, {"date": "2026-04-10", "type": "Imagen", "content": "Cooperación gatos adultos sabor pollo. Envase 100% reciclable.", "url": "https://www.instagram.com/p/DW9mEIxASiX/", "impressions": 323, "reach": 202, "interactions": 10, "likes": 10, "comments": 0, "saved": 0, "shares": 0, "views": 323, "clicks": 0, "org": 323, "paid": 0, "cat": "Producto"}, {"date": "2026-04-17", "type": "Imagen", "content": "Energía que se nota en cada salto. #MomentosCoope", "url": "https://www.instagram.com/p/DXO9dG5DZ2O/", "impressions": 8683, "reach": 182, "interactions": 9, "likes": 9, "comments": 0, "saved": 0, "shares": 0, "views": 295, "clicks": 0, "org": 8683, "paid": 0, "cat": "Marca"}, {"date": "2026-04-22", "type": "Carrusel", "content": "Con Cooperación, cada porción simple de medir, adaptada a cada perro.", "url": "https://www.instagram.com/p/DXcMVtLDUKe/", "impressions": 3102, "reach": 223, "interactions": 15, "likes": 13, "comments": 0, "saved": 2, "shares": 0, "views": 473, "clicks": 0, "org": 3102, "paid": 0, "cat": "Producto"}, {"date": "2026-04-29", "type": "Imagen", "content": "Día del Animal: respeto, cuidado y protección. ¿Cómo lo festejás?", "url": "https://www.instagram.com/p/DXt26zrDXrH/", "impressions": 4418, "reach": 173, "interactions": 13, "likes": 12, "comments": 0, "saved": 1, "shares": 0, "views": 279, "clicks": 0, "org": 4418, "paid": 0, "cat": "Marca"}, {"date": "2026-05-01", "type": "Imagen", "content": "Día del Trabajador: ¿de qué trabajaría tu mascota? #MomentosCoope", "url": "https://www.instagram.com/p/DXy5rWiDR0h/", "impressions": 6898, "reach": 228, "interactions": 19, "likes": 16, "comments": 1, "saved": 0, "shares": 2, "views": 392, "clicks": 0, "org": 6898, "paid": 0, "cat": "Marca"}, {"date": "2026-05-08", "type": "Imagen", "content": "Cooperación perros cachorros sabor carne. Envase 100% reciclable.", "url": "https://www.instagram.com/p/DYFsyEMn9q8/", "impressions": 1775, "reach": 183, "interactions": 7, "likes": 6, "comments": 0, "saved": 1, "shares": 0, "views": 303, "clicks": 0, "org": 1775, "paid": 0, "cat": "Producto"}, {"date": "2026-05-13", "type": "Carrusel", "content": "¿Por qué los gatos eligen las cajas de cartón? Bienestar felino.", "url": "https://www.instagram.com/p/DYSXKAHDVAO/", "impressions": 5338, "reach": 169, "interactions": 9, "likes": 7, "comments": 0, "saved": 1, "shares": 1, "views": 359, "clicks": 0, "org": 5338, "paid": 0, "cat": "Marca"}, {"date": "2026-05-17", "type": "Imagen", "content": "Día Mundial del Reciclaje: bolsa 100% reciclable. #CooperaConElPlaneta", "url": "https://www.instagram.com/p/DYcNLGpDYVF/", "impressions": 2618, "reach": 159, "interactions": 9, "likes": 8, "comments": 0, "saved": 1, "shares": 0, "views": 268, "clicks": 0, "org": 2618, "paid": 0, "cat": "Marca"}, {"date": "2026-05-19", "type": "Imagen", "content": "¡Cooperación presente en Expo Veterinarias! Stand 182, La Rural.", "url": "https://www.instagram.com/p/DYhmqPLDeT6/", "impressions": 3407, "reach": 173, "interactions": 10, "likes": 9, "comments": 0, "saved": 1, "shares": 0, "views": 304, "clicks": 0, "org": 3407, "paid": 0, "cat": "Marca"}, {"date": "2026-06-04", "type": "Carrusel", "content": "¡Qué gran experiencia en Expovet! Resumen del encuentro.", "url": "https://www.instagram.com/p/DZKl5SjDWp3/", "impressions": 2949, "reach": 211, "interactions": 11, "likes": 11, "comments": 0, "saved": 0, "shares": 0, "views": 516, "clicks": 0, "org": 2949, "paid": 0, "cat": "Marca"}, {"date": "2026-06-08", "type": "Imagen", "content": "Cooperación gatos adultos sabor pescado. Envase 100% reciclable.", "url": "https://www.instagram.com/p/DZVg1C8jW2B/", "impressions": 213, "reach": 112, "interactions": 5, "likes": 5, "comments": 0, "saved": 0, "shares": 0, "views": 213, "clicks": 0, "org": 213, "paid": 0, "cat": "Producto"}, {"date": "2026-06-10", "type": "Imagen", "content": "Modo Mundial activado junto a nuestras mascotas. #Mundial2026", "url": "https://www.instagram.com/p/DZaVRdlDWLc/", "impressions": 5999, "reach": 117, "interactions": 16, "likes": 15, "comments": 0, "saved": 1, "shares": 0, "views": 202, "clicks": 0, "org": 5999, "paid": 0, "cat": "Marca"}], "facebook": [{"date": "2026-03-17", "type": "Foto", "content": "Mito de los gatos naranjas: datos curiosos.", "url": "https://facebook.com/122101334216616063/posts/122175119792616063", "impressions": 35, "reach": 28, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 35, "paid": 0, "cat": "Marca"}, {"date": "2026-04-04", "type": "Foto", "content": "Día Internacional de los Animales Callejeros.", "url": "https://facebook.com/122101334216616063/posts/122176511786616063", "impressions": 47, "reach": 36, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 47, "paid": 0, "cat": "Marca"}, {"date": "2026-04-10", "type": "Foto", "content": "Cooperación gatos adultos sabor pollo. 100% reciclable.", "url": "https://facebook.com/122101334216616063/posts/122177023964616063", "impressions": 52, "reach": 38, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 52, "paid": 0, "cat": "Producto"}, {"date": "2026-04-17", "type": "Foto", "content": "Energía que se nota en cada salto. #MomentosCoope", "url": "https://facebook.com/122101334216616063/posts/122177574470616063", "impressions": 67, "reach": 49, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 67, "paid": 0, "cat": "Marca"}, {"date": "2026-04-22", "type": "Álbum", "content": "Cada porción simple de medir, adaptada a cada perro.", "url": "https://facebook.com/122101334216616063/posts/122178150212616063", "impressions": 70, "reach": 51, "interactions": 1, "likes": 1, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 70, "paid": 0, "cat": "Producto"}, {"date": "2026-04-29", "type": "Foto", "content": "Día del Animal: respeto, cuidado y protección.", "url": "https://facebook.com/122101334216616063/posts/122178728066616063", "impressions": 70, "reach": 53, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 70, "paid": 0, "cat": "Marca"}, {"date": "2026-05-01", "type": "Foto", "content": "Día del Trabajador: ¿de qué trabajaría tu mascota?", "url": "https://facebook.com/122101334216616063/posts/122178881606616063", "impressions": 83, "reach": 66, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 83, "paid": 0, "cat": "Marca"}, {"date": "2026-05-08", "type": "Foto", "content": "Cooperación perros cachorros sabor carne. 100% reciclable.", "url": "https://facebook.com/122101334216616063/posts/122179455452616063", "impressions": 96, "reach": 67, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 96, "paid": 0, "cat": "Producto"}, {"date": "2026-05-13", "type": "Álbum", "content": "¿Por qué los gatos eligen las cajas de cartón?", "url": "https://facebook.com/122101334216616063/posts/122179902422616063", "impressions": 105, "reach": 72, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 105, "paid": 0, "cat": "Marca"}, {"date": "2026-05-17", "type": "Foto", "content": "Día Mundial del Reciclaje: bolsa 100% reciclable.", "url": "https://facebook.com/122101334216616063/posts/122180184956616063", "impressions": 70, "reach": 50, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 70, "paid": 0, "cat": "Marca"}, {"date": "2026-05-19", "type": "Foto", "content": "¡Cooperación presente en Expo Veterinarias! Stand 182.", "url": "https://facebook.com/122101334216616063/posts/122180339108616063", "impressions": 67, "reach": 47, "interactions": 1, "likes": 1, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 67, "paid": 0, "cat": "Marca"}, {"date": "2026-06-04", "type": "Álbum", "content": "¡Qué gran experiencia en Expovet! Resumen del encuentro.", "url": "https://facebook.com/122101334216616063/posts/122181676058616063", "impressions": 32, "reach": 17, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 1, "views": 0, "org": 32, "paid": 0, "cat": "Marca"}, {"date": "2026-06-08", "type": "Foto", "content": "Cooperación gatos adultos sabor pescado. 100% reciclable.", "url": "https://facebook.com/122101334216616063/posts/122182031840616063", "impressions": 18, "reach": 10, "interactions": 1, "likes": 1, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 18, "paid": 0, "cat": "Producto"}, {"date": "2026-06-08", "type": "Foto", "content": "Cooperación gatos adultos sabor pescado (2). 100% reciclable.", "url": "https://facebook.com/122101334216616063/posts/122182031612616063", "impressions": 16, "reach": 8, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 16, "paid": 0, "cat": "Producto"}, {"date": "2026-06-10", "type": "Foto", "content": "Modo Mundial activado junto a nuestras mascotas. #Mundial2026", "url": "https://facebook.com/122101334216616063/posts/122182176920616063", "impressions": 14, "reach": 8, "interactions": 0, "likes": 0, "comments": 0, "saved": 0, "shares": 0, "clicks": 0, "views": 0, "org": 14, "paid": 0, "cat": "Marca"}]};
+let FOL = {"ig": {"2026-05-15": 4, "2026-05-16": 10, "2026-05-17": 4, "2026-05-18": 5, "2026-05-19": 3, "2026-05-20": 0, "2026-05-21": 4, "2026-05-22": 10, "2026-05-23": 11, "2026-05-24": 11, "2026-05-25": 6, "2026-05-26": 2, "2026-05-27": 2, "2026-05-28": 3, "2026-05-29": 2, "2026-05-30": 4, "2026-05-31": 5, "2026-06-01": 6, "2026-06-02": 1, "2026-06-03": 0, "2026-06-04": 0, "2026-06-05": 0, "2026-06-06": 0, "2026-06-07": 0, "2026-06-08": 1, "2026-06-09": 0, "2026-06-10": 1, "2026-06-11": 3, "2026-06-12": 3, "2026-06-13": 0}, "ig_total": 1373, "ig_from": "2026-05-15"};
+let DEMO = {"genderAge": [["F.18-24", 17], ["F.25-34", 114], ["F.35-44", 199], ["F.45-54", 159], ["F.55-64", 90], ["F.65+", 102], ["M.18-24", 14], ["M.25-34", 114], ["M.35-44", 135], ["M.45-54", 107], ["M.55-64", 42], ["M.65+", 24], ["U.13-17", 1], ["U.18-24", 13], ["U.25-34", 51], ["U.35-44", 65], ["U.45-54", 65], ["U.55-64", 22], ["U.65+", 35]], "cities": [["Buenos Aires (CABA)", 123], ["Rosario", 62], ["San Nicolás de los Arroyos", 42], ["Córdoba", 38], ["Ezeiza", 28], ["Mar del Plata", 19], ["Monte Grande", 19], ["Ingeniero Budge", 18], ["González Catán", 18], ["Villa María", 16]], "totalFollowers": 1373, "arPct": 99};
+let all = [...DATA.instagram.map(p=>({...p,net:'IG'})), ...DATA.facebook.map(p=>({...p,net:'FB'}))];
+let dates = all.map(p=>p.date).sort();
+let MAXDATE = dates[dates.length-1], MINDATE = dates[0];
+
+const fmt=n=>{n=Math.round(n);return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":n.toLocaleString('es-AR')};
+const parse=s=>new Date(s+"T00:00:00");const iso=d=>d.toISOString().slice(0,10);
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const ACC="#3aa66b",ACC2="#2f8fd6",ACC3="#e0a93b",PUR="#9b59b6";
+const baseOpts={responsive:true,animation:false,plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxTicksLimit:14}}}};
+let charts={};
+
+function getRange(){return{from:document.getElementById('dFrom').value||MINDATE,to:document.getElementById('dTo').value||MAXDATE};}
+function applyPreset(){const r=document.getElementById('range').value;if(r==='custom')return;const n=+r;document.getElementById('dFrom').value=addDays(MAXDATE,-(n-1));document.getElementById('dTo').value=MAXDATE;}
+function prevDefault(from,to){const span=(parse(to)-parse(from))/864e5+1;return{from:addDays(from,-span),to:addDays(from,-1)};}
+function getCompare(from,to){const m=document.getElementById('compare').value;
+  if(m==='none')return null;
+  if(m==='custom')return{from:document.getElementById('cFrom').value||from,to:document.getElementById('cTo').value||to};
+  return prevDefault(from,to);}
+function catFilter(arr){const c=document.getElementById('cat').value;return c==='all'?arr:arr.filter(p=>p.cat===c);}
+function poolFor(net){const base=net==='instagram'?DATA.instagram.map(p=>({...p,net:'IG'})):net==='facebook'?DATA.facebook.map(p=>({...p,net:'FB'})):all;return catFilter(base);}
+const inRange=(arr,f,t)=>arr.filter(p=>p.date>=f&&p.date<=t);
+const SUM=["impressions","reach","interactions","likes","comments","saved","shares","views","clicks"];
+function agg(arr){const o={posts:arr.length};SUM.forEach(m=>o[m]=arr.reduce((s,p)=>s+(p[m]||0),0));return o;}
+function pctTag(c,p,on){if(!on)return{t:"",c:"flat"};if(!p)return{t:"sin base previa",c:"flat"};const v=(c-p)/p*100;return{t:(v>=0?"▲ +":"▼ ")+Math.abs(v).toFixed(1)+"%",c:v>=0?"pos":"neg"};}
+function newFollowers(net,f,t){
+  if(net==='facebook')return null; // not available
+  let s=0;for(const dte in FOL.ig){if(dte>=f&&dte<=t)s+=FOL.ig[dte];}return s;
+}
+
+function render(){
+  const net=document.getElementById('network').value;
+  document.getElementById('orgView').classList.toggle('hidden',net==='metaads');
+  document.getElementById('adsView').classList.toggle('hidden',net!=='metaads');
+  document.getElementById('netStatus').textContent=net==='metaads'?'Meta Ads — carga manual':'IG + FB conectados (metricool)';
+  if(net==='metaads'){recalcAds();renderPdv();return;}
+
+  const {from,to}=getRange();
+  const pool=poolFor(net);
+  const cur=agg(inRange(pool,from,to));
+  const cmp=getCompare(from,to);
+  const compOn=!!cmp;
+  const pFrom=cmp?cmp.from:null, pTo=cmp?cmp.to:null;
+  const prev=cmp?agg(inRange(pool,pFrom,pTo)):{posts:0};
+  document.getElementById('rangeLabel').textContent=`${from} → ${to} · ${cur.posts} publicaciones`+(compOn?`  (vs. ${pFrom} → ${pTo})`:"");
+
+  // followers KPI value
+  const nf=newFollowers(net,from,to), nfPrev=compOn?newFollowers(net,pFrom,pTo):null;
+  let folCard;
+  if(nf===null){
+    folCard=`<div class="kpi muted"><div class="label">Seguidores nuevos (FB)</div><div class="value" style="font-size:18px;color:#9aa7a0">No disp.</div><div class="chg flat">conectá Facebook Organic</div></div>`;
+  }else{
+    const ch=pctTag(nf,nfPrev,compOn);
+    const cover = from < FOL.ig_from ? ` · desde ${FOL.ig_from.slice(5)}` : "";
+    folCard=`<div class="kpi b"><div class="label">Seguidores nuevos${net==='all'?' (IG)':''}</div><div class="value">+${nf.toLocaleString('es-AR')}</div><div class="chg ${ch.c}">${ch.t||('total: '+FOL.ig_total.toLocaleString('es-AR'))}${compOn&&ch.t?' vs. previo':''}${cover}</div></div>`;
+  }
+
+  const freqCur=cur.reach?cur.impressions/cur.reach:0, freqPrev=prev.reach?prev.impressions/prev.reach:0;
+  const kpi=(lab,val,ch,cl)=>`<div class="kpi ${cl}"><div class="label">${lab}</div><div class="value">${val}</div><div class="chg ${ch.c}">${ch.t}${compOn&&ch.t?' vs. previo':''}</div></div>`;
+  const k=document.getElementById('kpis');k.innerHTML='';
+  k.insertAdjacentHTML('beforeend',kpi('Alcance',fmt(cur.reach),pctTag(cur.reach,prev.reach,compOn),'b'));
+  k.insertAdjacentHTML('beforeend',kpi('Impresiones',fmt(cur.impressions),pctTag(cur.impressions,prev.impressions,compOn),''));
+  k.insertAdjacentHTML('beforeend',kpi('Frecuencia',freqCur.toFixed(2)+'×',pctTag(freqCur,freqPrev,compOn),'c'));
+  k.insertAdjacentHTML('beforeend',folCard);
+  k.insertAdjacentHTML('beforeend',kpi('Saves',fmt(cur.saved),pctTag(cur.saved,prev.saved,compOn),''));
+  k.insertAdjacentHTML('beforeend',kpi('Shares',fmt(cur.shares),pctTag(cur.shares,prev.shares,compOn),'c'));
+
+  renderTop3(net,from,to);
+  renderConclusion(net,from,to);
+  renderFollowersChart(net,from,to);
+  renderAudience(net);
+  renderProductBrand(net,from,to);
+
+  if(charts.c1)charts.c1.destroy();
+  if(net==='all'){
+    document.getElementById('chart1Title').textContent='Instagram vs. Facebook';
+    const ig=agg(inRange(DATA.instagram,from,to)),fb=agg(inRange(DATA.facebook,from,to));
+    charts.c1=new Chart(c1,{type:'bar',data:{labels:['Impresiones','Alcance','Interacciones'],datasets:[
+      {label:'Instagram',data:[ig.impressions,ig.reach,ig.interactions],backgroundColor:ACC},
+      {label:'Facebook',data:[fb.impressions,fb.reach,fb.interactions],backgroundColor:ACC2}]},options:baseOpts});
+  }else{
+    document.getElementById('chart1Title').textContent='Interacciones por publicación';
+    const rows=inRange(pool,from,to).slice().sort((a,b)=>a.date<b.date?-1:1);
+    charts.c1=new Chart(c1,{type:'line',data:{labels:rows.map(r=>r.date.slice(5)),datasets:[
+      {label:'Interacciones',data:rows.map(r=>r.interactions),borderColor:ACC,backgroundColor:ACC+'22',fill:true,tension:.3,pointRadius:3}]},options:baseOpts});
+  }
+  if(charts.c2)charts.c2.destroy();
+  const top=inRange(pool,from,to).slice().sort((a,b)=>b.impressions-a.impressions).slice(0,12);
+  charts.c2=new Chart(c2,{type:'bar',data:{labels:top.map(p=>p.date.slice(5)+(net==='all'?' '+p.net:'')),datasets:[
+    {label:'Impresiones',data:top.map(p=>p.impressions),backgroundColor:top.map(p=>p.net==='FB'?ACC2:ACC)}]},
+    options:{...baseOpts,plugins:{legend:{display:false}}}});
+
+  renderTable(net,from,to);
+}
+
+function renderFollowersChart(net,from,to){
+  const row=document.getElementById('folRow'),title=document.getElementById('folTitle');
+  if(net==='facebook'){row.classList.add('hidden');title.classList.add('hidden');if(charts.cfol){charts.cfol.destroy();charts.cfol=null;}return;}
+  row.classList.remove('hidden');title.classList.remove('hidden');
+  const days=[];for(const dte in FOL.ig){if(dte>=from&&dte<=to)days.push([dte,FOL.ig[dte]]);}
+  days.sort((a,b)=>a[0]<b[0]?-1:1);
+  if(charts.cfol)charts.cfol.destroy();
+  const peak=document.getElementById('folPeak');
+  if(!days.length){peak.textContent=' · sin datos de seguidores en el rango (disponible desde '+FOL.ig_from.slice(5)+')';
+    charts.cfol=new Chart(cfol,{type:'bar',data:{labels:[],datasets:[{data:[]}]},options:baseOpts});return;}
+  const max=Math.max(...days.map(d=>d[1]));
+  const colors=days.map(d=>(d[1]===max&&max>0)?ACC3:ACC2);
+  charts.cfol=new Chart(cfol,{type:'bar',data:{labels:days.map(d=>d[0].slice(5)),datasets:[
+    {label:'Seguidores nuevos',data:days.map(d=>d[1]),backgroundColor:colors,borderRadius:4}]},
+    options:{...baseOpts,plugins:{legend:{display:false}}}});
+  const peakDays=days.filter(d=>d[1]===max&&max>0).map(d=>d[0].slice(5));
+  const tot=days.reduce((s,d)=>s+d[1],0);
+  const cover = from<FOL.ig_from ? ` (datos desde ${FOL.ig_from.slice(5)})` : "";
+  peak.innerHTML = max>0 ? ` · Mejor día: <b style="color:var(--accent3)">${peakDays.join(', ')}</b> (+${max}) · Total periodo: <b>+${tot}</b>${cover}` : ' · sin altas en el rango';
+}
+
+function renderAudience(net){
+  const show = (net==='all'||net==='instagram');
+  ['audTitle','audRow'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!show));
+  if(!show){['cGen','cAge','cCity'].forEach(c=>{if(charts[c]){charts[c].destroy();charts[c]=null;}});return;}
+  // gender
+  const g={F:0,M:0,U:0};
+  if(DEMO.gender){ DEMO.gender.forEach(([k,v])=>{ if(g[k]!==undefined) g[k]+=v; }); }
+  else { DEMO.genderAge.forEach(([k,v])=>{g[k[0]]+=v;}); }
+  if(charts.cGen)charts.cGen.destroy();
+  charts.cGen=new Chart(cGen,{type:'doughnut',data:{labels:['Mujeres','Hombres','Sin especificar'],datasets:[{data:[g.F,g.M,g.U],backgroundColor:[ACC2,ACC,'#cbd5d0']}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+  // age (sum across genders)
+  const buckets=['13-17','18-24','25-34','35-44','45-54','55-64','65+'];const ageMap={};buckets.forEach(b=>ageMap[b]=0);
+  if(DEMO.ageRanges){ DEMO.ageRanges.forEach(([b,v])=>{ if(b in ageMap) ageMap[b]+=v; }); }
+  else { DEMO.genderAge.forEach(([k,v])=>{const b=k.split('.')[1];if(b in ageMap)ageMap[b]+=v;}); }
+  if(charts.cAge)charts.cAge.destroy();
+  charts.cAge=new Chart(cAge,{type:'bar',data:{labels:buckets,datasets:[{data:buckets.map(b=>ageMap[b]),backgroundColor:ACC}]},options:{...baseOpts,plugins:{legend:{display:false}}}});
+  // cities
+  const ct=DEMO.cities.slice(0,8);
+  if(charts.cCity)charts.cCity.destroy();
+  charts.cCity=new Chart(cCity,{type:'bar',data:{labels:ct.map(c=>c[0]),datasets:[{data:ct.map(c=>c[1]),backgroundColor:ACC3}]},options:{...baseOpts,indexAxis:'y',plugins:{legend:{display:false}}}});
+  document.getElementById('audGeo').textContent=`· 🇦🇷 ${DEMO.arPct||0}% Argentina · ${(DEMO.totalFollowers||0).toLocaleString('es-AR')} seguidores`;
+}
+
+function renderProductBrand(net,from,to){
+  const base = net==='instagram'?DATA.instagram:net==='facebook'?DATA.facebook:[...DATA.instagram,...DATA.facebook];
+  const rows=base.filter(p=>p.date>=from&&p.date<=to);
+  const cats=['Producto','Marca'];
+  const avg=(c,k)=>{const a=rows.filter(p=>p.cat===c);return a.length?a.reduce((s,p)=>s+p[k],0)/a.length:0;};
+  const reachSum=c=>rows.filter(p=>p.cat===c).reduce((s,p)=>s+p.reach,0);
+  if(charts.cPB)charts.cPB.destroy();
+  charts.cPB=new Chart(cPB,{type:'bar',data:{labels:['Alcance prom.','Guardados prom.'],datasets:[
+    {label:'Producto',data:[avg('Producto','reach'),avg('Producto','saved')],backgroundColor:ACC2},
+    {label:'Marca / Contenido',data:[avg('Marca','reach'),avg('Marca','saved')],backgroundColor:ACC}]},options:baseOpts});
+  if(charts.cPB2)charts.cPB2.destroy();
+  const rp=reachSum('Producto'),rm=reachSum('Marca');
+  charts.cPB2=new Chart(cPB2,{type:'doughnut',data:{labels:['Producto','Marca / Contenido'],datasets:[{data:[rp,rm],backgroundColor:[ACC2,ACC]}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+}
+
+function renderTop3(net,from,to){
+  const sortBy=document.getElementById('sortBy').value;
+  const rows=inRange(poolFor(net),from,to).slice().sort((a,b)=>b[sortBy]-a[sortBy]).slice(0,3);
+  const medals=['🥇','🥈','🥉'];
+  const box=document.getElementById('top3');box.innerHTML='';
+  if(!rows.length){box.innerHTML='<div class="podium">Sin publicaciones en este rango.</div>';return;}
+  rows.forEach((p,i)=>{
+    box.insertAdjacentHTML('beforeend',
+    `<div class="podium p${i+1}">
+       <div><span class="medal">${medals[i]}</span><span class="net" style="background:${p.net==='FB'?ACC2:ACC}">${p.net}</span>
+        <span class="tag ${p.type}" style="margin-left:4px">${p.type}</span></div>
+       <a href="${p.url}" target="_blank"><div class="ctext">${p.content||'(sin texto)'}</div></a>
+       <div class="stats">
+         <div><b>${fmt(p.impressions)}</b>impresiones</div>
+         <div><b>${fmt(p.reach)}</b>alcance</div>
+         <div><b>${p.interactions}</b>interac.</div>
+         <div><b>${p.saved}</b>guard.</div>
+       </div></div>`);
+  });
+}
+
+function renderConclusion(net,from,to){
+  const rows=inRange(poolFor(net),from,to);
+  const el=document.getElementById('conclusion');
+  if(!rows.length){el.innerHTML='Sin datos para concluir en este rango.';return;}
+  const totImpr=rows.reduce((s,p)=>s+p.impressions,0);
+  // best post
+  const best=rows.slice().sort((a,b)=>b.impressions-a.impressions)[0];
+  // format avg interactions
+  const byType={};rows.forEach(p=>{(byType[p.type]=byType[p.type]||[]).push(p);});
+  let bestType=null,bestAvg=-1;
+  for(const t in byType){const avg=byType[t].reduce((s,p)=>s+p.interactions,0)/byType[t].length;if(avg>bestAvg){bestAvg=avg;bestType=t;}}
+  const nf=newFollowers(net,from,to);
+  let txt='<b>Conclusión:</b> ';
+  if(net==='all'){
+    const ig=agg(inRange(DATA.instagram,from,to)),fb=agg(inRange(DATA.facebook,from,to));
+    const tot=ig.impressions+fb.impressions||1;
+    const igShare=(ig.impressions/tot*100).toFixed(0);
+    txt+=`Instagram concentró el <b>${igShare}%</b> de las impresiones del periodo (${fmt(ig.impressions)} vs. ${fmt(fb.impressions)} de Facebook): el orgánico de FB está prácticamente apagado y conviene reforzarlo con pauta o repensar el contenido. `;
+  }else if(net==='facebook'){
+    txt+=`Facebook sumó ${fmt(totImpr)} impresiones en ${rows.length} posts, con alcance e interacción muy bajos. Es la red más floja del mix; evaluá pauta o derivar esfuerzo a Instagram. `;
+  }else{
+    txt+=`Instagram generó <b>${fmt(totImpr)}</b> impresiones en ${rows.length} publicaciones. `;
+  }
+  txt+=`El formato con mejor interacción promedio fue <b>${bestType}</b> (${bestAvg.toFixed(1)} interac./post). `;
+  txt+=`El contenido estrella fue “${(best.content||'').slice(0,60)}…” con <b>${fmt(best.impressions)}</b> impresiones`;
+  if(net!=='facebook' && nf!==null) txt+=`, y se sumaron <b>+${nf}</b> seguidores nuevos en IG`;
+  txt+='.';
+  el.innerHTML=txt;
+}
+
+function renderTable(net,from,to){
+  const sortBy=document.getElementById('sortBy').value;
+  const rows=inRange(poolFor(net),from,to).slice().sort((a,b)=>b[sortBy]-a[sortBy]);
+  const tb=document.querySelector('#topTbl tbody');tb.innerHTML='';
+  if(!rows.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:#6c8579;padding:24px">No hay publicaciones en este rango.</td></tr>';return;}
+  rows.forEach(p=>{tb.insertAdjacentHTML('beforeend',
+    `<tr><td>${p.date.slice(5)}</td>
+     <td><a class="cap" href="${p.url}" target="_blank" title="${(p.content||'').replace(/"/g,'&quot;')}">${p.content||'(sin texto)'}</a></td>
+     <td><b style="color:${p.net==='FB'?ACC2:ACC}">${p.net}</b></td>
+     <td><span class="tag ${p.type}">${p.type}</span></td>
+     <td>${p.impressions.toLocaleString('es-AR')}</td><td>${p.reach.toLocaleString('es-AR')}</td>
+     <td><b>${p.interactions}</b></td><td>${p.likes}</td><td>${p.saved}</td></tr>`);});
+}
+
+let ADS = [{"name": "Tráfico - Puntos de Venta - Tanda 3 - Junio 2026", "obj": "Tráfico", "status": "Activa", "spend": 89179, "impr": 63864, "reach": 31477, "clicks": 1287, "res": 436, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Gerar", "obj": "Tráfico", "status": "Activa", "spend": 44590, "impr": 30719, "reach": 11634, "clicks": 589, "res": 241, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Mr Dog RC", "obj": "Tráfico", "status": "Activa", "spend": 44297, "impr": 28297, "reach": 13187, "clicks": 596, "res": 227, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Mr Dog VM", "obj": "Tráfico", "status": "Activa", "spend": 44076, "impr": 26789, "reach": 11547, "clicks": 613, "res": 226, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Vet Asociadas", "obj": "Tráfico", "status": "Activa", "spend": 43975, "impr": 28683, "reach": 8283, "clicks": 525, "res": 179, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Casa Fioretti", "obj": "Tráfico", "status": "Activa", "spend": 42844, "impr": 27356, "reach": 17374, "clicks": 716, "res": 293, "resType": "Landing page views"}, {"name": "Alcance - Puntos de Venta - Don Antonio", "obj": "Alcance", "status": "Pausada", "spend": 42414, "impr": 155191, "reach": 108444, "clicks": 197, "res": 108444, "resType": "Reach"}, {"name": "Tráfico - Puntos de Venta - Distribuidora Nehuel", "obj": "Tráfico", "status": "Activa", "spend": 39996, "impr": 25145, "reach": 9797, "clicks": 529, "res": 214, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Distropets", "obj": "Tráfico", "status": "Activa", "spend": 39996, "impr": 25398, "reach": 11816, "clicks": 514, "res": 218, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - El Asturiano", "obj": "Tráfico", "status": "Activa", "spend": 39993, "impr": 33339, "reach": 13673, "clicks": 673, "res": 229, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Laboratorio de Nutrición Profesional", "obj": "Tráfico", "status": "Activa", "spend": 39986, "impr": 23249, "reach": 11694, "clicks": 473, "res": 196, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Veterinaria Pergamino", "obj": "Tráfico", "status": "Activa", "spend": 39984, "impr": 26984, "reach": 11423, "clicks": 563, "res": 209, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Cooperativa Agropecuaria de Tandil", "obj": "Tráfico", "status": "Activa", "spend": 39983, "impr": 27423, "reach": 13258, "clicks": 721, "res": 259, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - El Refugio", "obj": "Tráfico", "status": "Activa", "spend": 39958, "impr": 24158, "reach": 8557, "clicks": 527, "res": 197, "resType": "Landing page views"}, {"name": "Tráfico - Puntos de Venta - Mundo Canino", "obj": "Tráfico", "status": "Activa", "spend": 39608, "impr": 28333, "reach": 15598, "clicks": 617, "res": 265, "resType": "Landing page views"}, {"name": "Tráfico al perfil - Ficha perro - Mayo 2026", "obj": "Tráfico", "status": "Activa", "spend": 29991, "impr": 15995, "reach": 11287, "clicks": 264, "res": 275, "resType": "Instagram profile visits"}, {"name": "Tráfico al perfil - Modo Mundial - Junio 2026", "obj": "Tráfico", "status": "Activa", "spend": 24993, "impr": 18426, "reach": 11893, "clicks": 449, "res": 452, "resType": "Instagram profile visits"}, {"name": "Tráfico al perfil - Gatos y Cajas - Mayo 2026", "obj": "Tráfico", "status": "Activa", "spend": 24990, "impr": 20327, "reach": 13204, "clicks": 326, "res": 330, "resType": "Instagram profile visits"}, {"name": "Tráfico - Puntos de Venta - Forrajería Don Feli", "obj": "Tráfico", "status": "Pausada", "spend": 24507, "impr": 17588, "reach": 13404, "clicks": 347, "res": 137, "resType": "Landing page views"}, {"name": "Interacción - ExpoVet - Mayo 2026", "obj": "Interacción", "status": "Activa", "spend": 21472, "impr": 3103, "reach": 2130, "clicks": 30, "res": 520, "resType": "Post engagements"}, {"name": "Interacción - Perro scrolleando - Marzo 2026", "obj": "Interacción", "status": "Activa", "spend": 19990, "impr": 24017, "reach": 14835, "clicks": 22, "res": 10279, "resType": "Post engagements"}, {"name": "Tráfico al perfil - Ficha gato - Abril 2026", "obj": "Tráfico", "status": "Activa", "spend": 19987, "impr": 16108, "reach": 8910, "clicks": 242, "res": 247, "resType": "Instagram profile visits"}, {"name": "Tráfico al perfil - Tabla de Consumo - Abril 2026", "obj": "Tráfico", "status": "Activa", "spend": 19980, "impr": 18155, "reach": 10893, "clicks": 271, "res": 274, "resType": "Instagram profile visits"}, {"name": "Interacción - Varita gato - Abril 2026", "obj": "Interacción", "status": "Activa", "spend": 19980, "impr": 8388, "reach": 4297, "clicks": 11, "res": 961, "resType": "Post engagements"}, {"name": "Interacción - Meme Karen - Mayo 2026", "obj": "Interacción", "status": "Activa", "spend": 19968, "impr": 22367, "reach": 15112, "clicks": 13, "res": 9254, "resType": "Post engagements"}, {"name": "Interacción - Tabla de consumo - Abril 2026", "obj": "Interacción", "status": "Activa", "spend": 15000, "impr": 2629, "reach": 1796, "clicks": 32, "res": 378, "resType": "Post engagements"}, {"name": "Interacción - Resumen ExpoVet - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 14994, "impr": 2492, "reach": 1990, "clicks": 17, "res": 324, "resType": "Post engagements"}, {"name": "Interacción - Mes no Maltrato - Abril 2026", "obj": "Interacción", "status": "Activa", "spend": 14975, "impr": 17201, "reach": 11356, "clicks": 19, "res": 10212, "resType": "Post engagements"}, {"name": "Interacción - Ficha gato - Abril 2026", "obj": "Interacción", "status": "Activa", "spend": 14973, "impr": 2793, "reach": 1472, "clicks": 3, "res": 436, "resType": "Post engagements"}, {"name": "Tráfico al perfil - Mes no Maltrato - Abril 2026", "obj": "Tráfico", "status": "Activa", "spend": 14955, "impr": 5615, "reach": 4071, "clicks": 187, "res": 193, "resType": "Instagram profile visits"}, {"name": "Interacción - Gatos y Cajas - Mayo 2026", "obj": "Interacción", "status": "Activa", "spend": 14951, "impr": 4979, "reach": 3545, "clicks": 35, "res": 599, "resType": "Post engagements"}, {"name": "Interacción - Modo Mundial - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 14942, "impr": 9188, "reach": 6873, "clicks": 15, "res": 1321, "resType": "Post engagements"}, {"name": "Interacción - Dia del Animal - Abril 2026", "obj": "Interacción", "status": "Activa", "spend": 10499, "impr": 4139, "reach": 3582, "clicks": 8, "res": 1004, "resType": "Post engagements"}, {"name": "Interacción - Día Nacional del Perro - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 9995, "impr": 13392, "reach": 12791, "clicks": 13, "res": 8589, "resType": "Post engagements"}, {"name": "[MTR IG POST] 2026-05-17", "obj": "Interacción", "status": "Activa", "spend": 9977, "impr": 2350, "reach": 1580, "clicks": 2, "res": 474, "resType": "Post engagements"}, {"name": "Interacción - Ficha perro - Mayo 2026", "obj": "Interacción", "status": "Activa", "spend": 9976, "impr": 1472, "reach": 1006, "clicks": 3, "res": 184, "resType": "Post engagements"}, {"name": "[MTR IG POST] 2026-04-04", "obj": "Interacción", "status": "Activa", "spend": 9915, "impr": 10897, "reach": 9156, "clicks": 29, "res": 3132, "resType": "Post engagements"}, {"name": "[MTR IG POST] 2026-05-01", "obj": "Interacción", "status": "Activa", "spend": 9882, "impr": 6506, "reach": 5119, "clicks": 12, "res": 1505, "resType": "Post engagements"}, {"name": "Interacción - Momentos Coope - Junio 2026", "obj": "Interacción", "status": "Activa", "spend": 8975, "impr": 2249, "reach": 1707, "clicks": 3, "res": 343, "resType": "Post engagements"}, {"name": "Tráfico - Puntos de Venta - El Choique", "obj": "Tráfico", "status": "Pausada", "spend": 4287, "impr": 2738, "reach": 2284, "clicks": 62, "res": 23, "resType": "Landing page views"}, {"name": "Interacción - Gatos naranjas - Marzo 2026", "obj": "Interacción", "status": "Activa", "spend": 3570, "impr": 2548, "reach": 2217, "clicks": 2, "res": 234, "resType": "Post engagements"}, {"name": "Tráfico al perfil - Promoción marca gato - Marzo 2026", "obj": "Tráfico", "status": "Activa", "spend": 1653, "impr": 1137, "reach": 1066, "clicks": 17, "res": 19, "resType": "Instagram profile visits"}];
+ADS.forEach((a,i)=>{a.inc=true;a.i=i;a.grupo=a.name.includes('Puntos de Venta')?'PDV':'Resto';});
+const OBJCOL={"Tráfico":ACC,"Alcance":ACC2,"Interacción":ACC3};
+function shortName(n){return n.replace(/^Tráfico - Puntos de Venta - /,'PDV: ').replace(/^Tráfico al perfil - /,'Perfil: ').replace(/^Interacción - /,'Interac: ').replace(/^Alcance - Puntos de Venta - /,'Alcance: ');}
+let adFilter='all';
+function adsWS(){const f=adFilter;if(f==='all')return ADS.slice();if(f==='PDV'||f==='Resto')return ADS.filter(a=>a.grupo===f);return ADS.filter(a=>a.obj===f);}
+function renderAds(){
+  const ws=adsWS();
+  const tb=document.querySelector('#adTbl tbody');tb.innerHTML='';
+  ws.forEach(a=>{tb.insertAdjacentHTML('beforeend',
+    `<tr class="${a.inc?'':'excluded'}">
+      <td title="${a.name.replace(/"/g,'&quot;')}">${shortName(a.name)}</td>
+      <td><span class="tag" style="background:${OBJCOL[a.obj]||'#888'}">${a.obj}</span></td>
+      <td style="color:${a.status==='Activa'?ACC:'#b08900'}">${a.status}</td>
+      <td>$${a.spend.toLocaleString('es-AR')}</td>
+      <td>${a.impr.toLocaleString('es-AR')}</td>
+      <td>${a.reach.toLocaleString('es-AR')}</td>
+      <td>${a.clicks.toLocaleString('es-AR')}</td>
+      <td title="${a.resType}">${a.res.toLocaleString('es-AR')}</td>
+      <td style="text-align:center"><input type="checkbox" class="chk" ${a.inc?'checked':''} onchange="ADS[${a.i}].inc=this.checked;renderAds()"></td></tr>`);});
+  document.getElementById('adCount').textContent=`${ws.filter(a=>a.inc).length} de ${ws.length} incluidas`;
+  recalcAds();
+}
+function renderPdv(){
+  const hay = PDV.length > 0;
+  ['pdvTitle','pdvKpis','pdvTblCard'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.toggle('hidden',!hay);
+  });
+  const row=document.getElementById('cPdv') && document.getElementById('cPdv').closest('.chart-row');
+  if(row) row.classList.toggle('hidden',!hay);
+  if(!hay){ ['cPdv','cPdvDest'].forEach(c=>{if(charts[c]){charts[c].destroy();charts[c]=null;}}); return; }
+
+  // Semanas que caen dentro del rango elegido (se incluye la que se superpone)
+  const {from,to}=getRange();
+  const dentro = PDV.filter(p=> p.hasta>=from && p.desde<=to );
+  const ws = dentro.length ? dentro : PDV;
+
+  // Acumulado por punto de venta
+  const porPdv={};
+  ws.forEach(p=>{
+    const a=porPdv[p.name]=porPdv[p.name]||{name:p.name,reach:0,impr:0,clics:0,visits:0,wa:0,loc:0,semanas:0};
+    a.reach+=p.reach; a.impr+=p.impr; a.clics+=p.clics;
+    a.visits+=p.visits; a.wa+=p.wa; a.loc+=p.loc; a.semanas++;
+  });
+  const lista=Object.values(porPdv);
+
+  const t=k=>lista.reduce((s,p)=>s+(p[k]||0),0);
+  const visits=t('visits'), wa=t('wa'), loc=t('loc'), clics=t('clics'), reach=t('reach');
+  const acciones=wa+loc;
+  const semanas=[...new Set(ws.map(p=>p.semana))].length;
+  const activos=lista.filter(p=>p.visits>0).length;
+
+  document.getElementById('pdvKpis').innerHTML = [
+    ['Visitas a los links', visits.toLocaleString('es-AR'), `${activos} de ${lista.length} comercios con tráfico`],
+    ['Acciones en el link', acciones.toLocaleString('es-AR'), visits?`${(acciones/visits*100).toFixed(1)}% de las visitas`:''],
+    ['Clics a dirección', loc.toLocaleString('es-AR'), acciones?`${(loc/acciones*100).toFixed(0)}% de las acciones`:''],
+    ['Clics a WhatsApp', wa.toLocaleString('es-AR'), acciones?`${(wa/acciones*100).toFixed(0)}% de las acciones`:'']
+  ].map(([t,v,s],i)=>`<div class="kpi ${['','b','c',''][i]}"><div class="label">${t}</div><div class="value">${v}</div><div class="chg flat">${s}</div></div>`).join('');
+
+  const tit=document.getElementById('pdvTitle');
+  if(tit) tit.textContent=`🏪 Puntos de venta — ${semanas} semana${semanas===1?'':'s'} · `+
+    `${clics.toLocaleString('es-AR')} clics en pauta · alcance acumulado ${reach.toLocaleString('es-AR')}`;
+
+  // ranking por visitas
+  const top=lista.slice().sort((a,b)=>b.visits-a.visits).slice(0,10);
+  if(charts.cPdv)charts.cPdv.destroy();
+  charts.cPdv=new Chart(cPdv,{type:'bar',
+    data:{labels:top.map(p=>p.name.length>26?p.name.slice(0,24)+'…':p.name),
+          datasets:[{label:'Visitas al link',data:top.map(p=>p.visits),backgroundColor:ACC},
+                    {label:'Acciones (dirección + WhatsApp)',data:top.map(p=>p.wa+p.loc),backgroundColor:ACC2}]},
+    options:{...baseOpts,indexAxis:'y'}});
+
+  if(charts.cPdvDest)charts.cPdvDest.destroy();
+  charts.cPdvDest=new Chart(cPdvDest,{type:'doughnut',
+    data:{labels:['Clics a dirección','Clics a WhatsApp'],
+          datasets:[{data:[loc,wa],backgroundColor:[ACC,ACC2]}]},
+    options:{responsive:true,maintainAspectRatio:false}});
+
+  const tb=document.querySelector('#pdvTbl tbody'); tb.innerHTML='';
+  lista.slice().sort((a,b)=>b.visits-a.visits).forEach(p=>{
+    const ctr = p.impr ? (p.clics/p.impr*100) : 0;
+    tb.insertAdjacentHTML('beforeend',
+      `<tr${p.visits?'':' class="excluded"'}>
+        <td title="${p.name.replace(/"/g,'&quot;')}">${p.name}</td>
+        <td>${p.reach.toLocaleString('es-AR')}</td>
+        <td>${p.clics.toLocaleString('es-AR')}</td>
+        <td>${ctr.toFixed(2)}%</td>
+        <td><b>${p.visits.toLocaleString('es-AR')}</b></td>
+        <td>${p.loc.toLocaleString('es-AR')}</td>
+        <td>${p.wa.toLocaleString('es-AR')}</td></tr>`);
+  });
+  pV.textContent=reach.toLocaleString('es-AR');
+  pC.textContent=clics.toLocaleString('es-AR');
+  pT.textContent=visits.toLocaleString('es-AR');
+  pL.textContent=loc.toLocaleString('es-AR');
+  pW.textContent=wa.toLocaleString('es-AR');
+}
+
+function recalcAds(){
+  const inc=adsWS().filter(a=>a.inc);
+  const t=k=>inc.reduce((s,a)=>s+(a[k]||0),0);
+  const spend=t('spend'),impr=t('impr'),reach=t('reach'),clicks=t('clicks');
+  tSpend.textContent='$'+spend.toLocaleString('es-AR');tImpr.textContent=impr.toLocaleString('es-AR');
+  tReach.textContent=reach.toLocaleString('es-AR');tClicks.textContent=clicks.toLocaleString('es-AR');tRes.textContent='—';
+  // paid KPI strip
+  const ctr=impr?(clicks/impr*100):0, cpm=impr?(spend/impr*1000):0, cpc=clicks?spend/clicks:0;
+  const ak=document.getElementById('adsKpis');ak.innerHTML='';
+  const akpi=(l,v,cl)=>`<div class="kpi ${cl}"><div class="label">${l}</div><div class="value">${v}</div></div>`;
+  ak.insertAdjacentHTML('beforeend',akpi('Inversión','$'+fmt(spend),'c'));
+  ak.insertAdjacentHTML('beforeend',akpi('Impresiones',fmt(impr),''));
+  ak.insertAdjacentHTML('beforeend',akpi('Alcance (suma)',fmt(reach),'b'));
+  ak.insertAdjacentHTML('beforeend',akpi('Clics',fmt(clicks),''));
+  ak.insertAdjacentHTML('beforeend',akpi('CTR',ctr.toFixed(2)+'%','c'));
+  ak.insertAdjacentHTML('beforeend',akpi('CPM','$'+cpm.toFixed(0),'b'));
+  // chart by objective
+  const byObj={};inc.forEach(a=>byObj[a.obj]=(byObj[a.obj]||0)+a.spend);
+  const objs=Object.keys(byObj);
+  if(charts.cAdsObj)charts.cAdsObj.destroy();
+  charts.cAdsObj=new Chart(cAdsObj,{type:'doughnut',data:{labels:objs,datasets:[{data:objs.map(o=>byObj[o]),backgroundColor:objs.map(o=>OBJCOL[o]||'#888')}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+  // top campaigns by spend
+  const top=inc.slice().sort((a,b)=>b.spend-a.spend).slice(0,8);
+  if(charts.cAdsTop)charts.cAdsTop.destroy();
+  charts.cAdsTop=new Chart(cAdsTop,{type:'bar',data:{labels:top.map(a=>shortName(a.name)),datasets:[{data:top.map(a=>a.spend),backgroundColor:top.map(a=>OBJCOL[a.obj]||'#888')}]},options:{...baseOpts,indexAxis:'y',plugins:{legend:{display:false}}}});
+  // combined paid + organic (range)
+  const {from,to}=getRange();const org=agg(inRange(all,from,to));
+  const totReach=reach+org.reach,totImpr=impr+org.impressions;
+  const cards=[["Inversión (incluidas)","$"+fmt(spend),"c"],["Alcance combinado*",fmt(totReach),""],["Impresiones combinadas",fmt(totImpr),"b"],
+    ["CPC","$"+cpc.toFixed(0),"c"],["% alcance pagado*",totReach?((reach/totReach*100).toFixed(0)+"%"):"—",""],["Campañas incluidas",inc.length,"b"]];
+  const box=document.getElementById('combined');box.innerHTML='';
+  cards.forEach(([l,v,cl])=>box.insertAdjacentHTML('beforeend',`<div class="kpi ${cl}"><div class="label">${l}</div><div class="value" style="font-size:21px">${v}</div></div>`));
+  document.getElementById('adsNote').innerHTML='<b>Notas:</b> el "alcance (suma)" suma el alcance de cada campaña, por lo que puede contar dos veces a una misma persona impactada por varias campañas (lo mismo aplica al alcance combinado y al % pagado, marcados con *). Para branding, mirá sobre todo <b>CPM</b> (costo de exposición) y la distribución por objetivo. Los "resultados" no se suman porque mezclan tipos distintos (clics a web, visitas al perfil, interacciones, alcance).';
+}
+
+document.getElementById('range').addEventListener('change',()=>{applyPreset();render();});
+['dFrom','dTo'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{document.getElementById('range').value='custom';render();}));
+document.getElementById('compare').addEventListener('change',()=>{
+  const m=document.getElementById('compare').value,cd=document.getElementById('compDates');
+  if(m==='custom'){cd.style.display='flex';const {from,to}=getRange();const d=prevDefault(from,to);
+    if(!document.getElementById('cFrom').value)document.getElementById('cFrom').value=d.from;
+    if(!document.getElementById('cTo').value)document.getElementById('cTo').value=d.to;}
+  else cd.style.display='none';
+  render();});
+['cFrom','cTo'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
+  document.getElementById('compare').value='custom';document.getElementById('compDates').style.display='flex';render();}));
+['network','sortBy','cat'].forEach(id=>document.getElementById(id).addEventListener('change',render));
+document.querySelectorAll('#adFilters .fpill').forEach(b=>b.addEventListener('click',()=>{
+  adFilter=b.dataset.f;
+  document.querySelectorAll('#adFilters .fpill').forEach(x=>x.classList.toggle('active',x===b));
+  renderAds();}));
+function arrancar(){
+  ['dFrom','dTo','cFrom','cTo'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.min=MINDATE; el.max=MAXDATE;
+    if(el.value && (el.value<MINDATE||el.value>MAXDATE)) el.value='';
+  });
+  applyPreset();
+  renderAds();renderPdv();render();
+}
+
+aviso('Cargando datos de la planilla…', true);
+cargarDatos()
+  .catch(e=>{ console.error(e); aviso('No se pudo leer la planilla — mostrando datos guardados', false); })
+  .finally(arrancar);
+</script>
+</body>
+</html>
