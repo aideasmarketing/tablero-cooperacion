@@ -220,7 +220,7 @@ footer{font-size:12px;color:var(--muted);text-align:center;padding:16px;margin-t
 // ║                                                                      ║
 // ║  El ID es la parte del link entre  /d/  y  /edit                     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
-const SHEET_ID = '1ydNmwyOSplFODUK0Jcg0JvqzMFZfQTGJ3v1tYqCarKw';
+const SHEET_ID = '1oDHdrp0OsNtevQr-Gpy0TFVADiEHm5NqL9fMuZ9WW3Y';
 
 const HOJAS = {
   hist:   'Histórico Mensual',
@@ -250,23 +250,17 @@ function parseCSV(texto){
 
 // ── filas -> objetos. Busca la fila de encabezados (la planilla tiene título arriba).
 function aObjetos(filas, pista, primeraCol){
-  let h=-1;
-  // 1) fila que tenga la celda exacta
-  for(let i=0;i<Math.min(filas.length,8);i++){
+  // Los encabezados están en la fila 1. Igual se busca por si quedó un título arriba.
+  let h=0;
+  for(let i=0;i<Math.min(filas.length,6);i++){
     if(filas[i].some(c=>String(c).trim()===pista)){ h=i; break; }
   }
-  // 2) si Google fusionó el título con los encabezados, la celda TERMINA con la pista
-  if(h<0){
-    for(let i=0;i<Math.min(filas.length,8);i++){
-      if(filas[i].some(c=>String(c).trim().endsWith(pista))){ h=i; break; }
-    }
-  }
-  if(h<0) return [];
+  if(h<0) h=0;
   const cols=filas[h].map(x=>String(x).trim());
-  // si Google pegó el título del documento adelante del encabezado, dejar solo el encabezado
-  const limpiar=(s,nombre)=> (nombre && s!==nombre && s.endsWith(nombre)) ? nombre : s;
+  // por si Google pegó el título del documento adelante de un encabezado
+  const limpiar=(s,n)=> (n && s!==n && s.endsWith(n)) ? n : s;
   for(let j=0;j<cols.length;j++) cols[j]=limpiar(cols[j], pista);
-  cols[0]=limpiar(cols[0], primeraCol||pista);
+  if(primeraCol) cols[0]=limpiar(cols[0], primeraCol);
   return filas.slice(h+1).map(f=>{
     const o={};
     cols.forEach((c,j)=>{ if(c) o[c]=(f[j]!==undefined?String(f[j]).trim():''); });
@@ -404,22 +398,20 @@ async function cargarDatos(){
     return false;
   }
 
-  // ── PUBLICACIONES
-  const fPosts = crudo.posts ? aObjetos(crudo.posts,'Pos.','Mes') : [];
-  const posts = fPosts.filter(f=>parseMes(f['Mes'])).map(f=>{
-    const red=(f['Red']||'').toUpperCase().startsWith('FB') ? 'FB'
-            : (f['Red']||'').toUpperCase().startsWith('IG') ? 'IG'
-            : (/facebook/.test(f['Link']||'') ? 'FB' : 'IG');
+  // ── PUBLICACIONES (la columna Fecha ya viene como AAAA-MM-DD)
+  const fPosts = crudo.posts ? aObjetos(crudo.posts,'Fecha','Fecha') : [];
+  const posts = fPosts.map(f=>{
+    const red=(f['Red']||'').toUpperCase().startsWith('FB') ? 'FB' : 'IG';
     return {
       _red: red,
-      date: fechaPost(f['Fecha'], f['Mes']),
+      date: fechaISO(f['Fecha']),
       type: (f['Tipo']||'').trim(),
       content: (f['Descripción']||'').trim(),
       url: (f['Link']||'').trim(),
-      impressions: num(f['Impresiones']),
+      impressions: num(f['Vistas']),          // Meta ya no da impresiones por posteo
       reach: num(f['Alcance']),
       views: num(f['Vistas']),
-      clicks: num(f['Clicks']),
+      clicks: 0,
       interactions: num(f['Int. Totales']),
       likes: num(f['Likes']),
       comments: num(f['Comentarios']),
@@ -495,7 +487,7 @@ async function cargarDatos(){
   const ads = fAds.filter(f=>(f['Nombre Campaña']||'').trim() &&
                              !/^TOTAL/i.test(f['Mes']||'')).map(f=>({
     name:(f['Nombre Campaña']||'').trim(), obj:(f['Objetivo']||'').trim(),
-    status:(f['Estado']||'').trim(), spend:num(f['Inversión ($)']),
+    status:(f['Estado']||'').trim(), spend:num(f['Inversión']),
     impr:num(f['Impresiones']), reach:num(f['Alcance']),
     clicks:num(f['Clics']), res:num(f['Resultados']),
     resType:(f['Objetivo']||'').trim()==='Tráfico'?'Clics en el enlace':'Interacciones',
