@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- VERSION: encabezados-por-posicion-v9 -->
+<!-- VERSION: seguidores-redondeados-v10 -->
 <title>Cooperación — Tablero de Redes</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <style>
@@ -687,7 +687,16 @@ function renderFollowersChart(net,from,to){
   const peakDays=days.filter(d=>d[1]===max&&max>0).map(d=>d[0].slice(5));
   const tot=days.reduce((s,d)=>s+d[1],0);
   const cover = from<FOL.ig_from ? ` (datos desde ${FOL.ig_from.slice(5)})` : "";
-  peak.innerHTML = max>0 ? ` · Mejor día: <b style="color:var(--accent3)">${peakDays.join(', ')}</b> (+${max}) · Total periodo: <b>+${tot}</b>${cover}` : ' · sin altas en el rango';
+  // Los seguidores vienen por MES y se reparten entre los días: si hay muchos días
+  // empatados, no tiene sentido hablar de "mejor día".
+  const r1 = n => Math.round(n*10)/10;
+  const porMes = peakDays.length > 4;
+  const detalle = porMes
+    ? ` · promedio diario <b>+${r1(max)}</b> (dato mensual repartido por día)`
+    : ` · Mejor día: <b style="color:var(--accent3)">${peakDays.join(', ')}</b> (+${r1(max)})`;
+  peak.innerHTML = max>0
+    ? `${detalle} · Total periodo: <b>+${Math.round(tot).toLocaleString('es-AR')}</b>${cover}`
+    : ' · sin altas en el rango';
 }
 
 function renderAudience(net){
